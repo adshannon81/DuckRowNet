@@ -1,0 +1,416 @@
+﻿@using System.Text;
+@using System.Collections.Specialized;
+@using DuckRowNet.Helpers;
+@using DuckRowNet.Helpers.Object;
+
+@*Pay through QwertyTime. Option to take a cut but could cause problems*@
+
+@helper PayButton(GroupClass gClass, string userID, List<DateTime> userDates)
+{
+bool success = true;
+
+if (IsPost && Request.Form["tab"] == "Paypal")
+{
+    DAL db = new DAL();
+
+    string sAPIUser = PayPal.Profile.ApiUsername;
+    string sAPIPassword = PayPal.Profile.ApiPassword;
+    string sAPISignature = PayPal.Profile.ApiSignature;
+
+    string sAPIEndpoint = "";
+    string sAPIRedirect = "";
+    string sAppID = PayPal.Profile.ApplicationId;
+    string ipnNotification = "";
+    var strCancel = "";
+    var strReturn = "";
+    string currency = "";
+    string primaryReceiver = "";
+
+    bool entireCourse = false;
+    DateTime sessionDate = DateTime.Now;
+    if (!String.IsNullOrEmpty(Request.Form["entireCourse"]) && Request.Form["entireCourse"].ToString() == "yes")
+    {
+        entireCourse = true;
+    }
+    else
+    {
+        entireCourse = false;
+        sessionDate = Convert.ToDateTime(Request.Form["dropInDate"]);
+    }
+
+    if (PayPal.Profile.Environment == "sandbox")
+    {
+        sAPIEndpoint = "https://svcs.sandbox.paypal.com/AdaptivePayments/Pay";
+        sAPIRedirect = "https://www.sandbox.paypal.com/webscr?cmd=_ap-payment&paykey=";
+
+        ipnNotification = "http://test.qwertytime.com/ProcessOrder";
+
+        //https://www.x.com/user/my-account/applications/manage#most_recent
+        //Sandbox ID:APP-80W284485P519543T
+        //Live App ID:APP-2RX13021NL460845N
+
+        currency = "GBP";
+        primaryReceiver = "pay_1321978487_biz@gmail.com"; //
+
+        strCancel = "http://test.qwertytime.com/";
+        strReturn = "http://test.qwertytime.com/Classes/" + gClass.ID.ToString() + "/ThankYou";
+    }
+    else
+    {
+        //PROD
+
+        sAPIEndpoint = "https://svcs.paypal.com/AdaptivePayments/Pay";
+        sAPIRedirect = "https://www.paypal.com/webscr?cmd=_ap-payment&paykey=";
+        ipnNotification = "http://www.qwertytime.com/ProcessOrder";
+
+        currency = "EUR";
+        primaryReceiver = "ad.shannon@gmail.com"; //
+
+        strCancel = "http://www.qwertytime.com/";
+        strReturn = "http://www.qwertytime.com/Classes/" + gClass.ID.ToString() + "/ThankYou";
+    }
+
+    string sVersion = "1.1.0";
+    string sErrorLangugage = "en_US";
+    string sDetailLevel = "ReturnAll";
+    string sRequestDataBinding = "NV";
+    string sResponseDataBinding = "NV";
+
+    var companyDetails = db.getCompanyDetails(gClass.Company);
+
+    string feePayer = "PRIMARYRECEIVER"; //SECONDARYONLY";  //use "EACHRECEIVER" will make qt fee visible as there can be no primary receiver
+
+    //calculate fees
+    double cost = 0;
+    if (entireCourse && gClass.IsCourse)
+    {
+        cost = gClass.CostOfCourse;
+    }
+    else {
+        cost = gClass.CostOfSession;
+    }
+
+    string paypalBusiness = companyDetails.PaypalEmail;
+    if (paypalBusiness.IsEmpty())
+    {
+        paypalBusiness = companyDetails.Email;
+    }
+    bool absorbFees = gClass.AbsorbFee;// companyDetails.PaypalAbsorbFees;
+
+    double QTfee = Functions.calculateDuckRowFee(cost);
+    double PaypalFee = Functions.calculatePaypalFee(cost);
+
+    double primaryCost = cost;
+    double secondaryCost = cost - QTfee - PaypalFee;
+
+    if (!absorbFees)
+    {
+        //client pays for fee
+        primaryCost = cost + QTfee + PaypalFee;
+        secondaryCost = cost;
+        feePayer = "PRIMARYRECEIVER"; //Price is increased and QT pays the fee
+    }
+
+    //string senderEmail = "Test2_1328629260_per_1346869831_per@gmail.com";
+
+    string primaryAmount = primaryCost.ToString("###0.00");
+    string secondaryReceiver = paypalBusiness;
+    string secondaryAmount = secondaryCost.ToString("###0.00");
+
+
+    // other clientDetails fields
+    string sIpAddress = Request.UserHostAddress;
+    string sCustomerID = HttpContext.Current.User.Identity.Name;
+    //string sPartnerName = "MyCompanyName";
+    //string sDeviceID = "255.255.255.255";
+    string sInvoice = gClass.ID + "_" + HttpContext.Current.User.Identity.Name + "_" + DateTime.Now.ToString("ddMMyyhhmmss");
+    if (!companyDetails.PaypalAbsorbFees)
+    {
+        sInvoice += "_daf"; //Don't Absorb Fees
+    }
+
+    string memo = gClass.Company + " - " + gClass.Name;
+    if (entireCourse)
+    {
+        memo += " - Entire Course starting on " + gClass.StartDate.ToString("dd MMM yyyy @ HH:mm");
+    }
+    else
+    {
+        memo += " - Single Session on " + sessionDate.ToString("dd MMM yyyy @ HH:mm");
+    }
+    //memo += " &af=" + absorbFees.ToString();
+
+    string trackingID = gClass.ID + "_" + HttpContext.Current.User.Identity.Name
+    + "_" + companyDetails.PaypalAbsorbFees.ToString()
+    + "_" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+    + "_" + entireCourse.ToString()
+    + "_" + sessionDate.ToString("yyyy-MM-dd HH:mm:ss");
+
+    // construct the name value request string
+    // be sure to UrlEncode all values
+    StringBuilder sRequest = new StringBuilder();
+    sRequest.Append("actionType=PAY");  //The action taken in the Pay request (that is, the PAY action)
+    sRequest.Append("&clientDetails.applicationId=");
+    sRequest.Append(HttpUtility.UrlEncode(sAppID));    //#Standard Sandbox App ID
+    sRequest.Append("&clientDetails.ipAddress=" + HttpUtility.UrlEncode(sIpAddress));     //#Address from which request is sent
+    sRequest.Append("&clientDetails.customerId=" + HttpUtility.UrlEncode(sCustomerID));
+    sRequest.Append("&partnerName=" + HttpUtility.UrlEncode(gClass.Name));
+    sRequest.Append("&paymentSubType=" + HttpUtility.UrlEncode(gClass.Name));
+    sRequest.Append("&DESC=" + HttpUtility.UrlEncode(gClass.Name));
+    sRequest.Append("&currencyCode=" + HttpUtility.UrlEncode(currency));    //#The currency, e.g. US dollars");
+    sRequest.Append("&feesPayer=" + HttpUtility.UrlEncode(feePayer));
+    sRequest.Append("&ipnNotificationUrl=" + HttpUtility.UrlEncode(ipnNotification));
+    sRequest.Append("&memo=" + HttpUtility.UrlEncode(memo));
+    sRequest.Append("&trackingId=" + HttpUtility.UrlEncode(trackingID));
+    //sRequest.Append("&senderEmail=" + HttpUtility.UrlEncode(senderEmail));
+    sRequest.Append("&receiverList.receiver(0).amount=" + HttpUtility.UrlEncode(primaryAmount));   //#The payment amount for the first receiver
+    sRequest.Append("&receiverList.receiver(0).email=" + HttpUtility.UrlEncode(primaryReceiver));
+    sRequest.Append("&receiverList.receiver(0).primary=true");     //#Receiver designation (there can be only 1 primary receiver)
+    sRequest.Append("&receiverList.receiver(0).invoiceId=" + HttpUtility.UrlEncode(sInvoice));
+    sRequest.Append("&receiverList.receiver(1).amount=" + HttpUtility.UrlEncode(secondaryAmount));     //#The payment amount for the second receiver
+    sRequest.Append("&receiverList.receiver(1).email=" + HttpUtility.UrlEncode(secondaryReceiver));
+    sRequest.Append("&receiverList.receiver(1).primary=false");
+    sRequest.Append("&requestEnvelope.errorLanguage=en_US");
+    sRequest.Append("&returnUrl=" + HttpUtility.UrlEncode(strReturn));
+    sRequest.Append("&cancelUrl=" + HttpUtility.UrlEncode(strCancel));   //#For use if the consumer decides not to proceed with payment
+
+
+    try
+    {
+        // get ready to make the call
+        HttpWebRequest oPayRequest = (HttpWebRequest)WebRequest.Create(sAPIEndpoint);
+        oPayRequest.Method = "POST";
+        oPayRequest.ContentLength = sRequest.Length;
+        oPayRequest.ContentType = "application/x-www-form-urlencoded";
+        // set the HTTP Headers
+        oPayRequest.Headers.Add("X-PAYPAL-SECURITY-USERID", sAPIUser);
+        oPayRequest.Headers.Add("X-PAYPAL-SECURITY-PASSWORD", sAPIPassword);
+        oPayRequest.Headers.Add("X-PAYPAL-SECURITY-SIGNATURE", sAPISignature);
+        oPayRequest.Headers.Add("X-PAYPAL-SERVICE-VERSION", sVersion);
+        oPayRequest.Headers.Add("X-PAYPAL-APPLICATION-ID", sAppID);
+        oPayRequest.Headers.Add("X-PAYPAL-REQUEST-DATA-FORMAT", sRequestDataBinding);
+        oPayRequest.Headers.Add("X-PAYPAL-RESPONSE-DATA-FORMAT", sResponseDataBinding);
+        // send the request
+        StreamWriter oStreamWriter = new StreamWriter(oPayRequest.GetRequestStream());
+        oStreamWriter.Write(sRequest.ToString());
+        oStreamWriter.Close();
+        // get the response
+        HttpWebResponse oPayResponse = (HttpWebResponse)oPayRequest.GetResponse();
+        StreamReader oStreamReader = new StreamReader(oPayResponse.GetResponseStream());
+        string sResponse = oStreamReader.ReadToEnd();
+        oStreamReader.Close();
+        // write the response string to the console
+        System.Console.WriteLine(HttpUtility.UrlDecode(sResponse));
+
+        var response = HttpUtility.UrlDecode(sResponse);
+            @*<text>1 - @response</text>*@
+
+
+if (response.Contains("Account " + secondaryReceiver + " is restricted"))
+{
+    Logger.LogWarning("App_Code/Payment/PayPal", "ResponseRestrictedError", "user:" + userID + " :Class:" + gClass.ID, response);
+
+    @*//QT takes all money and business can claim back later?
+        sRequest = new StringBuilder();
+        sRequest.Append("actionType=PAY");  //The action taken in the Pay request (that is, the PAY action)
+        sRequest.Append("&clientDetails.applicationId=");
+        sRequest.Append(HttpUtility.UrlEncode(sAppID));    //#Standard Sandbox App ID
+        sRequest.Append("&clientDetails.ipAddress=" + HttpUtility.UrlEncode(sIpAddress));     //#Address from which request is sent
+        sRequest.Append("&clientDetails.customerId=" + HttpUtility.UrlEncode(sCustomerID));
+        sRequest.Append("&currencyCode=" + HttpUtility.UrlEncode(currency));    //#The currency, e.g. US dollars");
+        //sRequest.Append("&feesPayer=" + HttpUtility.UrlEncode(feePayer));
+        sRequest.Append("&ipnNotificationUrl=" + HttpUtility.UrlEncode(ipnNotification));
+        sRequest.Append("&memo=" + HttpUtility.UrlEncode(memo));
+        sRequest.Append("&trackingId=" + HttpUtility.UrlEncode(trackingID));
+        //sRequest.Append("&senderEmail=" + HttpUtility.UrlEncode(senderEmail));
+        sRequest.Append("&receiverList.receiver(0).amount=" + HttpUtility.UrlEncode(primaryAmount));   //#The payment amount for the first receiver
+        sRequest.Append("&receiverList.receiver(0).email=" + HttpUtility.UrlEncode(primaryReceiver));
+        //sRequest.Append("&receiverList.receiver(0).primary=true");     //#Receiver designation (there can be only 1 primary receiver)
+        sRequest.Append("&receiverList.receiver(0).invoiceId=" + HttpUtility.UrlEncode(sInvoice));
+
+        sRequest.Append("&requestEnvelope.errorLanguage=en_US");
+        sRequest.Append("&returnUrl=" + HttpUtility.UrlEncode(strReturn));
+        sRequest.Append("&cancelUrl=" + HttpUtility.UrlEncode(strCancel));     //#For use if the consumer decides not to proceed with payment
+
+
+        try
+        {
+            // get ready to make the call
+            oPayRequest = (HttpWebRequest)WebRequest.Create(sAPIEndpoint);
+            oPayRequest.Method = "POST";
+            oPayRequest.ContentLength = sRequest.Length;
+            oPayRequest.ContentType = "application/x-www-form-urlencoded";
+            // set the HTTP Headers
+            oPayRequest.Headers.Add("X-PAYPAL-SECURITY-USERID", sAPIUser);
+            oPayRequest.Headers.Add("X-PAYPAL-SECURITY-PASSWORD", sAPIPassword);
+            oPayRequest.Headers.Add("X-PAYPAL-SECURITY-SIGNATURE", sAPISignature);
+            oPayRequest.Headers.Add("X-PAYPAL-SERVICE-VERSION", sVersion);
+            oPayRequest.Headers.Add("X-PAYPAL-APPLICATION-ID", sAppID);
+            oPayRequest.Headers.Add("X-PAYPAL-REQUEST-DATA-FORMAT", sRequestDataBinding);
+            oPayRequest.Headers.Add("X-PAYPAL-RESPONSE-DATA-FORMAT", sResponseDataBinding);
+            // send the request
+            oStreamWriter = new StreamWriter(oPayRequest.GetRequestStream());
+            oStreamWriter.Write(sRequest.ToString());
+            oStreamWriter.Close();
+            // get the response
+            oPayResponse = (HttpWebResponse)oPayRequest.GetResponse();
+            oStreamReader = new StreamReader(oPayResponse.GetResponseStream());
+            sResponse = oStreamReader.ReadToEnd();
+            oStreamReader.Close();
+            // write the response string to the console
+            System.Console.WriteLine(HttpUtility.UrlDecode(sResponse));
+
+            response = HttpUtility.UrlDecode(sResponse);
+        }
+        catch (Exception e)
+        {
+            //System.Console.WriteLine(e.Source);
+            //System.Console.WriteLine(e.Message);
+            Logger.LogWarning("App_Code/Payment/PayPal", "PayButton", userID, e.Source + " : " + e.Message);
+        }*@
+
+
+}
+else if (response.Contains("error"))
+{
+    success = false;
+    Logger.LogWarning("App_Code/Payment/PayPal", "ResponseError", "user:" + userID + " :Class:" + gClass.ID, response);
+
+    //error - users paypal ins't confirmed
+    if (response.Contains("isn't confirmed by PayPal"))
+    {
+        //email user
+        Email.SendUnconfirmedPaypalError(companyDetails);
+    }
+
+}
+
+
+if (success)
+{
+    var results = response.Split('&');
+
+    @*<text>@response</text>*@
+
+        Session["payKey"] = "";
+        foreach (string r in results)
+        {
+            string[] r2 = r.Split('=');
+            response += r2[0] + ": " + r2[1] + " <br/> ";
+
+            if (r2[0] == "payKey")
+            {
+                Session["payKey"] = r2[1];
+
+                //create DB entry then redirect to paypal
+
+
+                Response.Redirect(sAPIRedirect + r2[1], false);
+
+            }
+        }
+    }
+
+    // leave the console up for us to physically read the response data
+    Console.Read();
+}
+catch (Exception e)
+{
+    @*<text>@e.Message</text>*@
+        //System.Console.WriteLine(e.Source);
+        //System.Console.WriteLine(e.Message);
+        Logger.LogWarning("App_Code/Payment/PayPal", "PayButton", userID, e.Source + " : " + e.Message);
+    }
+
+}
+
+if (!success)
+{
+        <div class="paymentDiv float-right" style="max-width: 225px;">Whoops! We can't take your payment at the moment. Please try again later or contact us directly to arrange a booking.</div>
+}
+else
+{
+        <script>
+            $(document).ready(function () {
+                allowDropIn();
+
+                $("#entireCourse").change(function () {
+                    allowDropIn();
+                });
+
+                function allowDropIn() {
+                    //alert($("#entireCourse").val());
+                    if (typeof $("#entireCourse").val() === undefined || $("#entireCourse").val() != "yes") {
+                        $("#singleSession").show();
+                    }
+                    else {
+                        //alert("here");
+                        $("#singleSession").hide();
+                    }
+                };
+            });
+        </script>
+
+
+    List<DateTime> dList = new List<DateTime>();
+    foreach (DateTime cDate in gClass.ClassDates)
+    {
+        if (userDates.IndexOf(cDate) == -1 && cDate >= DateTime.Now)
+        {
+            dList.Add(cDate);
+        }
+    }
+
+    if (dList.Count != 0)
+    {
+            @*<div class="div-class-view inner">*@
+            @*<form enctype="multipart/form-data" method="post" action="">
+                <div class="float-right" >
+                @if(gClass.AllowDropIn)
+                {
+                    <div class="row">
+                        <div class="label">Book Now</div>
+                        <select id="entireCourse" name="entireCourse" class="longSelect">
+                            @if (userDates.Count != 0 && gClass.ClassDates.First() >= DateTime.Now)
+                            { <text><option value="yes">Entire Course</option></text>}
+                            <option value="no">Single Class Only</option>
+                        </select>
+                    </div>
+                    <div class="row" id="singleSession">
+                        <div class="label">Select Session </div>
+                        <select id="dropInDate" name="dropInDate" class="longSelect">
+                            @foreach (DateTime d in dList)
+                            {
+                                <text><option value="@d.ToString("yyyy-MM-dd HH:mm:ss")">@d.ToString("dd MMM yyyy @ HH:mm")</option></text>
+                            }
+                        </select>
+                    </div>
+                }
+                else
+                {
+                    <div class="float-left" style="padding: 20px;">
+                        <div class="label">Complete Course</div>
+                        <span>@Function.calculateTotalCost(gClass.CostOfCourse).ToString("€#,##0.00")</span>
+                    </div>
+                }
+
+                    <div class="float-right">*@
+            <div class="paymentDiv float-right" style="max-width: 225px;">
+                <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_buynowCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!" />
+                <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+            </div>
+            <input type="text" name="tab" style="visibility:hidden;display:none;" value="Paypal" />
+                @*</div>
+                    </div>
+                    <div class="float-clear"></div>
+                    <input type="text" name="tab" style="visibility:hidden;display:none;" value="Paypal" />
+                    </form>*@
+                @*</div>   *@
+
+    }
+
+
+
+}
+
+}

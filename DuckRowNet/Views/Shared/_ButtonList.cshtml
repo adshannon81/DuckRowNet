@@ -1,0 +1,60 @@
+﻿@using DuckRowNet.Helpers.Object;
+@{ 
+
+    CompanyDetails companyDetails = ViewBag.CompanyDetails;
+    List<GroupClass> classList = ViewBag.ClassList;
+    int button = ViewBag.Button;
+    int itemsPerPage = ViewBag.ItemsPerPage;
+    string currentCategory = ViewBag.CurrentCategory;
+    string requiredDate = ViewBag.RequiredDate;
+    string currentLocation = ViewBag.CurrentLocation;
+
+    string baseURL = "~/";
+    if (companyDetails.Name != "DuckRow")
+    {
+        baseURL += "Classes/" + companyDetails.Name + "/";
+    }
+    //else
+    //{
+    //    company = "";
+    //}
+
+    int buttonCount = 1;
+    int count = 0;
+    string strlink = Href(baseURL);
+
+    foreach (var classItem in classList)
+    {
+        count++;
+        if (count == 1 || count % itemsPerPage == 1)
+        {
+            var aLink = strlink + "?page=" + buttonCount;
+            if (!String.IsNullOrEmpty(requiredDate))
+            {
+                aLink += "&date=" + requiredDate;
+            }
+            if (!String.IsNullOrEmpty(currentCategory))
+            {
+                aLink += "&cat=" + currentCategory;
+            }
+            if (!String.IsNullOrEmpty(currentLocation))
+            {
+                aLink += "&loc=" + currentLocation;
+            }
+
+            //var aLink = strlink + button;
+            if (buttonCount == button)
+            {
+                <text><div class="search-footer-item2" onclick="window.location='@aLink'">@buttonCount.ToString()</div></text>
+        }
+        else
+        {
+                <text><div class="search-footer-item" onclick="window.location='@aLink'">@buttonCount.ToString()</div></text>
+        }
+        buttonCount++;
+    }
+}
+
+}
+
+

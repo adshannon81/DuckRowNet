@@ -1,0 +1,15 @@
+﻿@using DuckRowNet.Helpers.Object;
+@helper GetHtml(GroupClass classItem) {
+    <div class="favourite">
+        <span id="tmplfavorite_@classItem.ID" class="fav fav_@classItem.ID">
+            @if (classItem.Favourite)
+            {
+                <text> <a href="javascript:void(0);" id="tmpl_login_frm_@classItem.ID"  data-id="@classItem.ID" data-task="remove">Remove from Favourites </a> </text>
+            }
+            else {
+                <text><a href="javascript:void(0);"  id="tmpl_login_frm_@classItem.ID"  data-id="@classItem.ID" data-task="add">Interested in going?</a></text>
+            }
+
+        </span>
+    </div>
+}

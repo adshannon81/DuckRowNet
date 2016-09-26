@@ -1,0 +1,281 @@
+#MyWidget, #qt_eventListWidget{
+    margin:2;
+   	padding:5;
+	font:Arial;
+	font-size:larger;
+	font-weight:bold;
+}
+.qt_eventListTable
+{
+    background-color: #fff;
+    color: #333;
+    font-size: .85em;
+    font-family: "Segoe UI" , Verdana, Helvetica, Sans-Serif;
+    /*font-family: Lucida Grande, Lucida Sans, Arial, sans-serif;*/
+    margin: 0;
+    padding: 0;
+    width: 420px;
+   table-layout: fixed;
+    border-collapse: collapse;
+    border-spacing: 0px;
+}
+.qt_eventListTable_Head.qt_eventListBlocks
+{
+   background-color: #c7d1d6;
+    /*width: 720px;*/
+    height: 30px;
+    table-layout: fixed;
+    text-align: left;
+   border-collapse: collapse;
+   border-spacing: 0px;
+}
+.qt_eventListTable_Head td
+{
+   padding: 3px;
+}
+.qt_eventListTable_Row td
+{
+    padding: 2px;
+}
+.qt_eventListTable_Row:hover td
+{
+    cursor: pointer;
+    background-color: #E1E7EA;
+}
+/*Block View */
+.qt_eventListBlocks
+{
+    color: #323232;
+}
+.qt_eventBlock
+{
+    float:left;
+    width: 240px;
+    /*height: 320px;*/
+    height: auto;
+    margin: 5px;
+    padding: 5px;
+    cursor: pointer;
+    
+    background-color: #fff;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+.qt_eventBlock:hover{
+   background-color:#E1E7EA;
+}
+.qt_eventBlockImage
+{
+    text-align: center;
+    max-height: 150px;
+    height: 150px;
+    vertical-align: bottom;
+    display: table-cell;
+}
+.qt_eventBlockImage img
+{
+    text-align: center;
+    max-width: 225px;
+    max-height: 150px;
+    margin: auto;
+    vertical-align: bottom;
+}
+.qt_eventBlockName
+{
+    text-align: center;
+    font-size: 20px;
+    padding: 7px;
+}
+.qt_eventBlockTime,
+.qt_eventBlockStart
+{
+    font-style: italic;
+    text-align: center;
+}
+.qt_eventBlockTime
+{
+    font-weight: bold;
+}
+.qt_eventBlockDesc
+{
+    padding: 7px;
+    text-align: justify;
+}
+.clear-fix {
+    clear:both;
+}
+
+.search-item {
+    float: left;
+    max-width: 30%;
+    border-radius: 3px;
+    margin: 5px;
+    width: 100%;
+    padding: 10px 10px 10px 10px;
+    line-height: 18px;
+    background-color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 18px;
+    font-family: 'Lato', 'Roboto', sans-serif;
+}
+
+.search-item-detail {
+    clear: both;
+    padding-top: 10px;
+}
+
+.search-item-image {
+    position: relative;
+    width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+    float: left;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.search-item-image img {
+    max-width: 100%;
+}
+
+.event-title {
+    margin-bottom: 10px;
+}
+
+.event-title .date {
+    border-right: 1px solid rgba(0, 0, 0, 0.15);
+    display: inline;
+    float: left;
+    font-size: 18px;
+    font-wieght: bold;
+    margin-right: 10px;
+    max-width: 50px;
+    padding: 0 5px 0 0;
+    width: 100%;
+    text-align: center;
+    background-color: transparent;
+    border-radius: 0;
+    margin-bottom: 8px;
+}
+.event-title .date span {
+    float: left;
+    width: 100%;
+}
+
+.search-item a {
+    padding: 0px;
+    word-wrap: break-word;
+    text-decoration:none;
+    color: #333;
+    outline: none;
+}
+
+.entry-details {
+    padding: 0 10px;
+}
+
+.entry-details p {
+    padding-left: 20px;
+    position: relative;
+}
+
+
+.search-item.cat-2{
+    border: thin solid #DFFFDD;
+    border-top: 3px solid #00bb08;
+}
+
+.search-item.cat-2:hover{
+    background: #DFFFDD;
+}
+
+.cat-2 p:before,
+.cat-2 span:before{
+    color: #00bb08;
+}
+
+
+.search-item.cat-3{
+    border: thin solid #ffd9d9;
+    border-top: 3px solid #DA0000;
+}
+
+
+.search-item:hover,
+.search-item.cat-3:hover{
+    background: #ffd9d9;
+}
+
+.cat-3 p:before,
+.cat-3 span:before{
+    color: #DA0000;
+}
+
+
+.search-item.cat-4{
+    border: thin solid #00b9ff;
+    border-top: 3px solid #00b9ff;
+}
+
+.search-item.cat-4:hover{
+    background: #00b9ff;
+}
+
+.cat-4 p:before,
+.cat-4 span:before{
+    color: #00b9ff;
+}
+
+
+p.address:before, p.event_date:before, p.date:before, p.cost:before, p.contact-name:before, p.phone:before, p.email:before, p.repeated:before {
+    position: absolute;
+    font-family: fontAwesome;
+    left: 1px;
+    top: -2px;
+    text-align: left;
+    width: 15px;
+    height: 20px;
+    font-weight: normal;
+}
+
+span.event-time:before{
+    font-family: fontAwesome;
+    text-align: left;
+    width: 15px;
+    height: 20px;
+    font-weight: normal;
+    margin: 0px 5px;
+}
+
+p.event_date:before, p.date:before {
+    content: "\f073";
+}
+
+span.event-time:before {
+    content: "\f017";
+}
+
+p.address:before {
+    content: "\f041";
+}
+
+.h2, h2 {
+    font-size: 18px;
+    font-family: 'Lato', 'Roboto', sans-serif;
+    font-weight: bold;
+
+}
+
+.start {
+    clear:both;
+}
+
+@media only screen and (max-width: 767px) {
+
+    .search-item {
+        max-width: 100%;
+    }
+
+}

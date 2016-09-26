@@ -1,0 +1,33 @@
+﻿@using System.Globalization;
+@using DuckRowNet.Helpers;
+@using DuckRowNet.Helpers.Object;
+@helper getHTML(CompanyDetails companyDetails, string classID)
+{
+DAL db = new DAL();
+var classSchedule = db.getClassSchedule(classID);
+
+    <table class="table_ClassSchedule">
+        <tr class="table_ClassSchedule_Head">
+            @*<td style="width:30px;">ID</td>*@
+            <td style="max-width:120px; text-align: center;" onclick="showAList('all')">Complete Schedule</td>
+        </tr>
+
+        @foreach (var classEvent in classSchedule)
+        {
+            if (classEvent.ScheduleDate <= DateTime.Now)
+            {
+                <tr id="dates_@classEvent.ScheduleDate.ToString("yyyyMMddHHmmss")" class="table_ClassSchedule_Row_Past" onclick="showAList('@classEvent.ScheduleDate.ToString("yyyyMMddHHmmss")')">
+                    <td>@classEvent.ScheduleDate.ToString("dddd dd MMMM yyyy @ h:mmtt", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+            else
+            {
+                <tr id="dates_@classEvent.ScheduleDate.ToString("yyyyMMddHHmmss")" class="table_ClassSchedule_Row" onclick="showAList('@classEvent.ScheduleDate.ToString("yyyyMMddHHmmss")')">
+                    <td>@classEvent.ScheduleDate.ToString("dddd dd MMMM yyyy @ h:mmtt", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        }
+
+    </table>
+
+}

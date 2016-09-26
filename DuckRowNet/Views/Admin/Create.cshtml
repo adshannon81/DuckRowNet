@@ -1,0 +1,149 @@
+﻿@using DuckRowNet.Helpers.Object
+@using DuckRowNet.Helpers;
+@{
+    ViewBag.Title = "Create";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    CompanyDetails companyDetails = ViewBag.CompanyDetails;
+
+    DateTime aDate = Convert.ToDateTime(DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:00:00"));
+
+    if (!String.IsNullOrEmpty(Request.Params["date"]))
+    {
+        var tempDate = Request.Params["date"];
+        aDate = Convert.ToDateTime(Request.Params["date"]);
+    }
+
+
+    var aDuration = "60";
+    if (!String.IsNullOrEmpty(Request.Params["duration"]))
+    {
+        aDuration = Request.Params["duration"];
+    }
+
+    var strCreateAdvert = "window.location='" + Href("~/Admin/CreateAdvert/" + companyDetails.Name + "'");
+    var strALink = Href("~/Admin/AddAppointment/" + companyDetails.Name + "?date=" + aDate.ToString("yyyy/MM/dd HH:mm:ss")) + "&duration=" + aDuration + "'";
+    var strAddAppointment = "window.location='" + strALink;
+    var strCreateClass = "window.location='" + Href("~/Admin/CreateClass/" + companyDetails.Name + "?date=" + aDate.ToString("yyyy/MM/dd HH:mm:ss")) + "&duration=" + aDuration + "'";
+    var strCreateCourse = "window.location='" + Href("~/Admin/CreateCourse/" + companyDetails.Name + "?date=" + aDate.ToString("yyyy/MM/dd HH:mm:ss")) + "&duration=" + aDuration + "'";
+
+    var strCreateClubEvent = "window.location='" + Href("~/Admin/CreateClubEvent/" + companyDetails.Name + "?date=" + aDate.ToString("yyyy/MM/dd HH:mm:ss")) + "&duration=" + aDuration + "'"; ;
+
+    var strCreateTicket = "window.location='" + Href("~/Admin/CreateTicketBook/" + companyDetails.Name) + "'";
+
+    bool NoLocations = ViewBag.NoLocations;
+    var strAddLocation = "window.location='" + Href("~/Admin/AddLocation/" + companyDetails.Name + "'");
+
+    //clear any previous data
+    Session["tempClass"] = null;
+}
+
+<div class="container">
+    <div class="create-list">
+
+        @*    <div class="buttons">
+                <div style="display:inline;">
+                    @*private appointment
+                    <input id="cmdAppointment" type="image" src="@Href("~/Images/single.png")" class="button" value="Appointment" onclick="@strAddAppointment" />
+                </div>
+                <div style="display:inline">
+                    @*course with set number of weeks
+                <input id="cmdCourse" type="image" src="@Href("~/Images/multiple2.png")" class="button" value="Course" onclick="@strCreateCourse" />
+                </div>
+
+                <div style="display:inline">
+                    @*drop in course
+                <input id="cmdClass" type="image" src="@Href("~/Images/multiple2.png")" class="button" value="Class" onclick="@strCreateClass" />
+                </div>
+
+                <div style="display:inline">
+                    @*drop in course
+                <input id="cmdTicket" type="image" src="@Href("~/Images/multiple2.png")" class="button" value="Ticket" onclick="@strCreateTicket" />
+                </div>
+            </div>*@
+
+        <div class="col-md-12">
+            <h2>Create some Ducks...</h2>
+			<br/>
+
+            <div class="">
+                <div class="create-item" onclick="@strAddLocation" style="margin-bottom:10px;">
+                    <h2>Add Location</h2>
+                    <div class="create-item-description">
+                        Add a location. This could be your address, a studio or venue. You'll need at least one location to add a class.
+                    </div>
+                </div>
+            </div>
+
+            @*<div @if(NoLocations){<text>class="hidden"</text>} >
+                <div class="create-item" onclick="@strCreateAdvert" style="margin-bottom:10px;">
+                    <h2>Advert</h2>
+                    <div class="create-item-description">
+                        Create an advert for your business. 
+                    </div>
+                </div>
+            </div>*@
+
+            @*<div>
+                    <div class="create-item" onclick="@strAddAppointment" style="margin-bottom:10px;">
+                        <div class="float-left" style="color: #8FA7B1; font-size: 24px;">
+                            One-To-One Appointment
+                        </div>
+                        <br />
+                        <div class="float-left" style="padding: 0 10px 10px 10px; width:600px;font-weight:bold;">
+                            Create a private appointment.
+                        </div>
+                    </div>
+                </div>*@
+
+            @if (companyDetails.IsClub)
+            {
+                <div @if(NoLocations){<text>class="hidden"</text>} >
+                    <div class="create-item create-clubEvent" onclick="@strCreateClubEvent" style="margin-bottom:10px;">
+                        <h2>Club Event</h2>
+                        <div class="create-item-description">
+                            Creat a new club event. This can be a public event or members only.
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div @if(NoLocations){<text>class="hidden"</text>} >
+                    <div class="create-item create-course" onclick="@strCreateCourse" style="margin-bottom:10px;">
+                        <h2>Course</h2>
+                        <div class="create-item-description">
+                            This type of class has a set number of sessions. Clients should attend all sessions. e.g. 8 week pilates course.
+                        </div>
+                    </div>
+                    <div class="create-item create-class" onclick="@strCreateClass" style="margin-bottom:10px;">
+                        <h2>Drop-In Class</h2>
+                        <div class="create-item-description">
+                            This type of class is always available. Clients can drop-in whenever they want. All classes are identical. e.g. Tuesday night Zumba workout.
+                        </div>
+                    </div>
+                </div>
+            }
+            @*<div >
+                    <div class="search-item" onclick="@strCreateTicket" style="margin-bottom:10px;">
+                        <div class="float-left" style="color: #8FA7B1; font-size: 24px;">
+                            Ticket Book
+                        </div>
+                        <br />
+                        <div>
+                            <p>description</p>
+                        </div>
+                    </div>
+                </div>*@
+
+            @*    //create advertisement
+
+            *@
+
+
+
+        </div>
+
+    </div>
+
+</div>

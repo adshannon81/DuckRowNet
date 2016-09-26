@@ -1,0 +1,52 @@
+﻿@using DuckRowNet.Helpers.Object;
+@helper GetHtml(CompanyDetails companyDetails, List<ClientAttendance> unconfirmedRequests) {
+
+    <div class="container unconfirmedRequestList">
+        @{ 
+            var count = 1;
+
+            foreach (ClientAttendance request in unconfirmedRequests)
+            {
+                <div class="row unconfirmedRequest @if (count == 1) {<text>first</text>} ">
+                    <div class="col-md-8">@request.FirstName @request.LastName (@request.Email) has requested a place on "@request.ClassDetails.Name"
+                    (@request.ClassDetails.CategoryName - @request.ClassDetails.SubCategoryName) </div>
+                    <div class="col-md-2">Confirm<div id="confirm_@request.BookingDetailsID.ToString()" class="confirm toolbar-button" data-id="@request.BookingDetailsID.ToString()"><i class="fa fa-square-o"></i></div></div>
+                    <div class="col-md-2">Cancel<div id="cancel_@request.BookingDetailsID.ToString()" class="cancel toolbar-button" data-id="@request.BookingDetailsID.ToString()"><i class="fa fa-close"></i></div></div>
+                </div>
+
+                count++;
+            }
+        }
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            $('.confirm').click(function () {
+                var url = window.location.protocol + '//' + window.location.host + '/json/Function/@companyDetails.Name';
+                var id = $(this).data('id');
+                $('#confirm_' + id + ' i').attr('class', 'fa fa-ellipsis-h');
+                $.get(url + '?function=confirmRequest&guid=' + $(this).data('id'), function (data) {
+                    if (data.trim() == "True") {
+                        $('#confirm_' + id + ' i').attr('class', 'fa fa-check-square-o');
+                    }
+                });
+            });
+
+            $('.cancel').click(function () {
+                var url = window.location.protocol + '//' + window.location.host + '/json/Function/@companyDetails.Name';
+                var id = $(this).data('id');
+                $('#cancel_' + id + ' i').attr('class', 'fa fa-ellipsis-h');
+                $.get(url + '?function=cancelRequest&guid=' + $(this).data('id'), function (data) {
+                    if (data.trim() == "True") {
+                        $('#cancel_' + id + ' i').attr('class', 'fa fa-check-square-o');
+                    }
+                });
+            });
+
+
+        });
+
+    </script>
+
+}

@@ -1,0 +1,128 @@
+﻿@using DuckRowNet.Helpers.Object;
+@helper getHTML(CompanyDetails companyDetails, List<string> users, String strSubject = "")
+{
+
+var uid = Guid.NewGuid().ToString("N");
+
+
+    <script>
+     $(function () {
+         var subject = $("#subject_@uid"),
+            emailBody = $("#emailBody_@uid"),
+            tips = $(".validateTips");
+
+         function updateTips(t) {
+             tips
+                .text(t)
+                .addClass("ui-state-highlight");
+             setTimeout(function () {
+                 tips.removeClass("ui-state-highlight", 1500);
+             }, 500);
+         }
+         function checkLength(o, n, min, max) {
+             if (o.val().length > max || o.val().length < min) {
+                 o.addClass("ui-state-error");
+                 updateTips("Length of " + n + " must be between " + min + " and " + max + ".");
+                 return false;
+             } else {
+                 return true;
+             }
+         }
+         function checkRegexp(o, regexp, n) {
+             if (!(regexp.test(o.val()))) {
+                 o.addClass("ui-state-error");
+                 updateTips(n);
+                 return false;
+             } else {
+                 return true;
+             }
+         }
+         $("#dialog-form_@uid").dialog({
+             autoOpen: false,
+             //height: 400,
+             width: 600,
+             modal: true,
+             resizable: false,
+             buttons: {
+                 "Send Email": function () {
+                         $("#emailFormDIV_@uid").hide();
+                         $(".ui-dialog-buttonpane").hide();
+                         $(".emailStatus").show();
+                         $(".loading").show();
+
+                         $("#emailForm_@uid").submit();
+                 },
+                 Cancel: function () {
+                     $(this).dialog("close");
+                 }
+             },
+             close: function () {
+                 //allFields.val("").removeClass("ui-state-error");
+                 $("#emailFormDIV_@uid").show();
+                 $(".ui-dialog-buttonpane").show();
+             }
+         });
+         $("#email-users_@uid")
+            .button()
+            .click(function () {
+                $("#dialog-form_@uid").dialog("open");
+            });
+     });
+
+     $(document).ready(function() {
+            // bind 'myForm' and provide a simple callback function
+            $('#emailForm_@uid').ajaxForm(function(data) {
+                //alert("Thank you for your comment!");
+
+                //alert("Data: '" + $.trim(data) + "'");
+                $(".loading").hide();
+                if ($.trim(data) == 'Success') {
+                    $(".messageSent_dark").show().animate({ opacity: 1.0 }, 1500).fadeOut(1000, function () {
+                        $("#emailFormDIV_@uid").show();
+                        $(".ui-dialog-buttonpane").show();
+                        $("#dialog-form_@uid").dialog("close");
+                    });
+                }
+                else {
+                    $(".messageFail_dark").show();
+                }
+
+            });
+        });
+    </script>
+
+
+
+    <script type="text/javascript" src="@Href("~/Scripts/jquery.form.js")"></script>
+
+    <div id="dialog-form_@uid" title="Email Users">
+        <div id="emailFormDIV_@uid">
+            <p class="validateTips"></p>
+            <form id="emailForm_@uid" enctype="multipart/form-data" action="@Href("~/json/Mail")" method="post">
+                <input type="text" id="company" name="company" style="display:none;"
+                       value="@companyDetails.Name" />
+                <input type="text" id="emailTo" name="emailTo" style="display:none;"
+                       value="@String.Join(",", users.ToArray())" />
+                <label for="emailSubject">Subject </label>
+                <input type="text" name="emailSubject" id="emailSubject" class="text ui-corner-all" value="@strSubject" />
+                <br /><br />
+                <label for="emailBody">Message</label>
+                <br />
+                <textarea name="emailBody" id="emailBody" rows="8" cols="40" style="width: 550px;resize: none;"></textarea>
+                <br />
+                <label for="emailAttachment">Add an attachment</label>
+                <input type="file" title="Add a file" id="emailAttachment" name="emailAttachment" accept="" />
+
+            </form>
+        </div>
+        <div class="emailStatus">
+            @{var loadImage = Href("~/Images/ajax-loader_small.gif");}
+            <div class="loading"><img src="@loadImage" /></div>
+            <div class="messageSent_dark">Your message has been sent successfully!</div>
+            <div class="messageFail_dark">We could not send your message. <br />Please try again later.</div>
+        </div>
+    </div>
+
+    <button id="email-users_@uid">Email These Clients</button>
+
+}

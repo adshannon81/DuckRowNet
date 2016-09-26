@@ -1,0 +1,266 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using System.Globalization;
+@{
+    ViewBag.Title = "Classes - Duck Row Net";
+    ViewBag.MetaDescription = "Find classes and events online. DuckRow.Net lists classes in your area. From Pilates to Art, find classes online with DuckRow.Net.";
+
+    CompanyDetails company = ViewBag.CompanyDetails;
+    List<GroupClass> classes = ViewBag.Classes;
+    List<string> categories = ViewBag.Categories;
+    List<string> locations = ViewBag.Locations;
+}
+
+<div class="jumbotron">
+    @*<h1>The easy way to find classes online</h1>*@
+    <p class="lead">Looking to list your classes online?</p>
+    <p><a href="@Href("~/Setup/Register")" class="btn btn-primary btn-lg">Register Now &raquo;</a></p>
+</div>
+
+<div class="row">
+    <div id="search-box" class="col-md-12"></div>    
+
+</div>
+
+<div class="row">
+    <div class="col-md-9 search-items">
+        @foreach (GroupClass classItem in classes)
+        {
+            if (classItem.IsAdvert)
+            {
+                var link = Href("~/Advert/" + classItem.ID);
+
+                <div class="search-item-advert" id="advert_@classItem.ID">
+                    <div class="row">
+                        <div class="search-item-date col-xs-1"></div>
+                        <div class="search-item-left col-xs-6">
+                            <h3 class="float-left" style="margin-top:0px;"><a class="classListLink" href="@link">@classItem.Name</a></h3>
+                            <br />
+                            <h5 style="margin-top: 5px;">@classItem.CategoryName - @classItem.SubCategoryName </h5>
+                            <div style="margin: 0px;">
+                                @{
+                                    string desc = System.Text.RegularExpressions.Regex.Replace(classItem.Description, "<[^>]*>", string.Empty);
+                                    if (desc.Length >= 80)
+                                    {
+                                        <text>@desc.Substring(0, 76) ...</text>
+                                    }
+                                    else
+                                    {
+                                        <text>@desc</text>
+                                    }
+                                }
+                            </div>
+                        </div>
+                        <div class="search-item-image col-xs-5" style="max-height: 70px;">
+                            @if (!String.IsNullOrEmpty(classItem.Image))
+                            {
+                                <div class="float-right search-item-image" style="max-height: 70px;">
+                                    <img src="@Href(classItem.Image)" style="float:right; max-height:100%; max-width: 100%" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                var link = Href("~/Classes/" + classItem.ID);
+                DateTime nextClass = @classItem.NextClass();
+
+                <div class="search-item" id="@classItem.ID">
+                    <div class="row">
+                        @if (!classItem.CheckIfSpacesExist() && classItem.ClassDates.Last() >= DateTime.Now)
+                        {
+                            <div style="position:absolute; margin:-10px;">
+                                <img style="opacity:0.85;filter:alpha(opacity=85); /* For IE8 and earlier */ " src="@Href("~/Images/fullybooked_small.png")" alt="" />
+                            </div>
+                        }
+                        <div class="search-item-date col-xs-1">
+                            <div>@nextClass.ToString("ddd")</div>
+                            <div>@nextClass.ToString("dd")</div>
+                            <div>@nextClass.ToString("MMM")</div>
+                        </div>
+
+                        <div class="search-item-left col-xs-6">
+                            <h3 class="float-left" style="margin-top:0px;"><a class="classListLink" href="@link">@classItem.Name @*with @classItem.Company*@ </a></h3>
+                            <br />
+                            <h5 style="margin-top: 5px;">@classItem.CategoryName - @classItem.SubCategoryName </h5>
+                            <p style="margin: 0px;">
+                                @if (nextClass >= DateTime.Now)
+                                {
+                                    <text>@*Next Date <br /> *@<B>
+                                        <i>
+                                            @nextClass.ToString("dddd dd MMMM yyyy") <br />
+                                        @nextClass.ToString("h:mmtt", CultureInfo.InvariantCulture) - @nextClass.AddMinutes(classItem.Duration).ToString("h:mmtt", CultureInfo.InvariantCulture) @@ @classItem.LocationName @if (!String.IsNullOrEmpty(classItem.State))
+                                        { <text>@classItem.State</text>}
+                                    </i>
+                                </B></text>
+                                }
+
+                                @if (classItem.IsCourse)
+                                {
+                                    if (classItem.NumberOfLessons.ToString() == "1")
+                                    {
+                                        <text>This course contains 1 session</text>
+                                    }
+                                    else
+                                    {
+
+                                        <text><br />This course contains @classItem.NumberOfLessons.ToString() sessions</text>
+
+                                        var strRepeat = "Repeated ";
+                                        if (classItem.Repeated.ToString() == "Day")
+                                        {
+                                            if (classItem.RepeatFrequency == 1)
+                                            {
+                                                strRepeat += " daily";
+                                            }
+                                            else
+                                            {
+                                                strRepeat += " every " + classItem.RepeatFrequency + " day";
+                                            }
+                                        }
+                                        else if (classItem.Repeated.ToString() == "Week")
+                                        {
+                                            if (classItem.RepeatFrequency == 1)
+                                            {
+                                                strRepeat += " weekly";
+                                            }
+                                            else
+                                            {
+                                                strRepeat += " every " + classItem.RepeatFrequency + " weeks";
+                                            }
+
+                                            string[] days = classItem.RepeatDays.Split('|');
+                                            if (days.Count() > 1)
+                                            {
+                                                strRepeat += " on ";
+                                                foreach (string day in days)
+                                                {
+                                                    if (day == days.First())
+                                                    {
+                                                        strRepeat += " " + day;
+                                                    }
+                                                    else if (day == days.Last())
+                                                    {
+                                                        strRepeat += " and " + day;
+                                                    }
+                                                    else
+                                                    {
+                                                        strRepeat += ", " + day;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        <text><br />@strRepeat</text>
+                                    }
+                                }
+                                else
+                                {
+
+                                    if (classItem.NumberOfLessons.ToString() == "1")
+                                    {
+                                        <text><br />This class contains 1 session</text>
+                                    }
+                                    else
+                                    {
+                                        var strRepeat = "Repeated ";
+                                        if (classItem.Repeated.ToString() == "Day")
+                                        {
+                                            if (classItem.RepeatFrequency == 1)
+                                            {
+                                                strRepeat += " daily";
+                                            }
+                                            else
+                                            {
+                                                strRepeat += " every " + classItem.RepeatFrequency + " day";
+                                            }
+                                        }
+                                        else if (classItem.Repeated.ToString() == "Week")
+                                        {
+                                            if (classItem.RepeatFrequency == 1)
+                                            {
+                                                strRepeat += " weekly";
+                                            }
+                                            else
+                                            {
+                                                strRepeat += " every " + classItem.RepeatFrequency + " weeks";
+                                            }
+
+                                            string[] days = classItem.RepeatDays.Split('|');
+                                            if (days.Count() > 1)
+                                            {
+                                                strRepeat += " on ";
+                                                foreach (string day in days)
+                                                {
+                                                    if (day == days.First())
+                                                    {
+                                                        strRepeat += " " + day;
+                                                    }
+                                                    else if (day == days.Last())
+                                                    {
+                                                        strRepeat += " and " + day;
+                                                    }
+                                                    else
+                                                    {
+                                                        strRepeat += ", " + day;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        <text><br />@strRepeat</text>
+                                    }
+
+                                }
+                            </p>
+                        </div>
+
+
+
+                        <div class="search-item-image col-xs-5">
+                            @if (!String.IsNullOrEmpty(classItem.Image))
+                            {
+                                if (company.Name != classItem.Company)
+                                {
+                                    if (!String.IsNullOrEmpty(classItem.CompanyImage))
+                                    {
+                                        <div class="search-item-logo">
+                                            <img src="@Href(classItem.CompanyImage)" alt="@classItem.Name" style="position:absolute; height:35px; background: #fff;" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="search-item-logo">
+                                            <span class="small-title">@classItem.Company</span>
+                                        </div>
+                                    }
+                                }
+                                <div class="search-item-image">
+                                    <img src="@Href(classItem.Image)" style="" alt="@classItem.Name" />
+                                </div>
+                            }
+                            else if (!String.IsNullOrEmpty(classItem.CompanyImage))
+                            {
+                                <div class="search-item-image">
+                                    <img src="@Href(classItem.CompanyImage)" style="" alt="@classItem.Name" />
+                                </div>
+                            }
+                            else if (company.Name != classItem.Company)
+                            {
+                                <div class="search-item-image">
+                                    <span class="small-title">@classItem.Company</span>
+                                </div>
+                            }
+                        </div>
+                    
+                        @*<div class="search-item-footer"><a href="@Href("~/Classes/" + @classItem.ID)" target="_self">More details here...</a></div>*@
+                    </div> @* END row *@
+                </div>
+            }@*END isAdvert check*@
+
+        }@*END foreach*@
+
+    </div>
+    <div class="col-md-3 ">
+
+    </div>
+</div>

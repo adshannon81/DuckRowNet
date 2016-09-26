@@ -1,0 +1,137 @@
+﻿@using DuckRowNet.Helpers.Object;
+@{
+    ViewBag.Title = "Classes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    List<ClientAttendance> unconfirmedRequests = ViewBag.UnconfirmedRequests;
+    CompanyDetails companyDetails = (CompanyDetails)TempData["CompanyDetails"];
+    GroupClass groupClass = (GroupClass)TempData["GroupClass"];
+    ViewBag.FaceBookTags = "";
+    
+}
+
+@section scripts {
+
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        $('.flexslider').flexslider();
+
+        $("featureSlide").slideDown("slow");
+
+            $("#dialog").dialog({
+                modal: true,
+                resizable: false,
+                bgiframe: true,
+                width: 500,
+                height: 230,
+                autoOpen: false
+            });
+
+
+            $(".confirmLink").click(function (e) {
+                e.preventDefault();
+                var theHREF = $(this).attr("href");
+                $("#dialog").css('visibility', 'visible');
+                $("#dialog").css('display', 'none');
+
+                $("#dialog").dialog('option', 'buttons', {
+                    "Confirm": function () {
+                        window.location.href = theHREF;
+                    },
+                    "Cancel": function () {
+                        $(this).dialog("close");
+                    }
+                });
+                $("#dialog").dialog("open");
+            });
+        });
+</script>
+
+}
+
+
+@{ 
+    if (unconfirmedRequests.Count() > 0)
+    {
+        <text>
+            @ConfirmRequests.GetHtml(companyDetails, unconfirmedRequests)
+        </text>
+    }
+
+    if (groupClass.Name != "")
+    {
+        if (groupClass.SubCategoryName == "Appointment")
+        {
+        <text>
+            @AppoinmentDetail.getHTML(groupClass, companyDetails)
+        </text>
+        }
+        else
+        {
+            //Class List
+            var desc = "Join " + groupClass.Name + ", a " + groupClass.SubCategoryName + " class at " + companyDetails.Name;
+            var title = groupClass.SubCategoryName + " @ " + companyDetails.Name;
+            if (!String.IsNullOrEmpty(companyDetails.State))
+            {
+                desc += ", " + companyDetails.State;
+                title += ", " + companyDetails.State;
+            }
+            else if(!String.IsNullOrEmpty(groupClass.State))
+            {
+                desc += ", " + companyDetails.State;
+                title += ", " + companyDetails.State;
+            }
+            desc += ". Find more classes like this on DuckRow.net or advertise for free in our online directory.";
+
+            ViewBag.MetaDescription = desc;
+            ViewBag.Title = title;
+
+            var hostUrl = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
+            var pageURL = Request.Url.AbsoluteUri; // hostUrl + "/Classes/" + groupClass.Company + "/" + groupClass. groupClass.ID;
+            ViewBag.FaceBookTags = "<meta property=\"og:url\" content=\"" + pageURL + "\" /> " +
+                            "<meta property=\"og:type\" content=\"article\" />" +
+                            "<meta property=\"og:title\" content=\"" + ViewBag.Title + "\" />" +
+                            "<meta property=\"og:description\" content=\"" + ViewBag.MetaDescription + "\" />";
+            if (!String.IsNullOrEmpty(groupClass.Image))
+            {
+                var image = hostUrl + Href(groupClass.Image.Substring(1));
+                ViewBag.FaceBookTags += "<meta property=\"og:image\" content=\"" + image + "\" />";
+            }
+
+            <text>
+                @ClassDetail.getHTML(groupClass, companyDetails, ViewBag.Title, ViewBag.MetaDescription)
+            </text>
+        }
+    }
+    else
+    {
+        if (String.IsNullOrEmpty(companyDetails.Name) || companyDetails.Name == "DuckRow")
+        {
+            ViewBag.MetaDescription = "Find classes in your local area, like Pilates, Yoga, Dance, Music, Art and more, with DuckRow.Net or advertise for free in our online directory";
+            ViewBag.Title = "Find Classes and Advertise for free on DuckRow.Net";
+        }
+        else
+        {
+            var desc = "Find out what classes " + companyDetails.Name + " have going on";
+            if(!String.IsNullOrEmpty(companyDetails.State))
+            {
+                desc += " in " + companyDetails.State;
+            }
+            desc += ". Find more classes in your local area or advertise for free in our online directory";
+            ViewBag.MetaDescription = desc;
+            ViewBag.Title = "Find Classes with " + companyDetails.Name + " on DuckRow.Net";
+        }
+    <text>
+
+        @ClassListing.getHTML(companyDetails)
+        @*@View.ClassInfiniteListing.getHTML(companyDetails)*@
+    </text>
+
+        }
+
+
+
+    }

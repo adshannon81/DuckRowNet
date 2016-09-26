@@ -1,0 +1,31 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string subCategoryName = ViewBag.SubCategoryName;
+
+    ViewBag.MetaDescription = "Advertise your " + subCategoryName + " classes on DuckRow.net for free. Let users reserve places, link classes with your own website, add multiple locaitons and, did we mention, it's free. What are you waiting for?";
+    ViewBag.Title = "Advertise your " + subCategoryName + " classes on DuckRow.Net";
+
+}
+
+<div class="container">
+    <h1>Advertise you @subCategoryName Classes on DuckRow.net</h1>
+    <div class="row">
+        <div class="col-md-8">
+            <br/>
+            <p><a href="http://duckrow.net">Advertising on DuckRow.net</a> is free. Not only is it easy to do, it only takes 30 seconds to <a href="http://duckrow.net/setup/company">get set up on DuckRow.net</a></p>
+            <p>You can add multiple locations, full courses, drop in classes, allow users to reservce places and more.</p>
+
+            <br />
+            <p>
+                We've made it as easy as possible for you to get your @subCategoryName classes online so that people can find you. DuckRow is about connecting people through activities like @subCategoryName.
+                All you have to do to get started is connect with us :)
+            </p>
+
+
+            <p>What are you waiting for? <a href="http://duckrow.net">Advertising on DuckRow.net</a> today!</p>
+        </div>
+    </div>
+</div>

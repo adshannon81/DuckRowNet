@@ -1,0 +1,80 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@helper getHTML(GroupClass advert, String returnURL = "")
+{
+if (Authenticate.IsAdvertUser(advert.ID.ToString()))
+{
+
+    var deleteURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+            VirtualPathUtility.ToAbsolute("~/Admin/Delete/" + advert.Company + "/" + advert.ID);
+
+    var editURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+                VirtualPathUtility.ToAbsolute("~/Admin/CreateAdvert/" + advert.Company + "/" + advert.ID);
+
+
+        <text>
+
+            <div id="adminBar" class="toolbar row">
+                <div class="col-sm-1">
+                    @if (returnURL != "")
+                    {
+                        <a id="toolbar-return" class="toolbar-button noHighlightLink" style="margin-right: 5px;" href="@returnURL" title="return"></a>
+
+                    }
+                </div>
+
+                <script type="text/javascript">
+                $(document).ready(function () {
+                    $("#dialog").dialog({
+                        modal: true,
+                        resizable: false,
+                        bgiframe: true,
+                        width: 500,
+                        height: 200,
+                        autoOpen: false
+                    });
+
+                    $(".confirmLink").click(function (e) {
+                        e.preventDefault();
+                        var theHREF = $(this).attr("href");
+                        $("#dialog").css('visibility', 'visible');
+                        $("#dialog").css('display', 'none');
+
+                        $("#dialog").dialog('option', 'buttons', {
+                            "Confirm": function () {
+                                window.location.href = theHREF;
+                            },
+                            "Cancel": function () {
+                                $(this).dialog("close");
+                                $(".confirmLink").show();
+                                $(".loading").hide();
+                            }
+                        });
+                        $("#dialog").dialog("open");
+                    });
+                });
+
+                </script>
+
+                <div class="col-sm-9"></div>
+
+
+                <div id="dialog" class="float-left" style="visibility:hidden;display:none; padding:10px;" title="Confirmation Required">
+                    <p><b>Are you sure you want to delete this advert? </b></p>
+                </div>
+
+                <div class="col-sm-1">
+                    <a id="toolbar-edit" class="toolbar-button noHighlightLink" href="@editURL" title="edit"></a>
+                </div>
+
+                <div class="col-sm-1">
+                    <a id="toolbar-delete" class="toolbar-button confirmLink noHighlightLink" href="@deleteURL" title="delete"></a>
+                </div>
+
+            </div>
+            <div class="float-clear"></div>
+
+        </text>
+
+}
+}

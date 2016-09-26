@@ -1,0 +1,157 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@using System.Text.RegularExpressions;
+@helper getHTML(GroupClass advert, bool isAdminUser)
+{
+DAL db = new DAL();
+string returnURL = "";
+var hostUrl = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
+
+var phoneDigits = "";
+if (!String.IsNullOrEmpty(advert.Phone))
+{
+    phoneDigits = Regex.Replace(advert.Phone, "[^0-9.]", "");
+}
+
+var mailto = "mailto:" + advert.Email + "?subject=" + advert.Name + "%20on%20DuckRow.net&body=Hi%2C%0D%0AI%20saw%20your%20class%20on%20DuckRow.net%0D%0A" + Uri.EscapeDataString(advert.GetUrl() ) ;
+
+if (Request.UrlReferrer != null)
+{
+    returnURL = Request.UrlReferrer.AbsoluteUri.ToString();
+}
+
+    <div id="classDetail" class="container advert">
+
+        @if (isAdminUser)
+        {
+            @AdvertBar.getHTML(advert, returnURL)
+
+        }
+        else
+        {
+            @ToolBar.getHTML(returnURL)
+        }
+        
+
+        <label id="classID" style="visibility:hidden;display:none;">ID: @advert.ID</label>
+
+        
+        <div class="div-class-view">
+            <div class="div-item-left col-md-8">
+                <h1 class="entry-title">@advert.Name </h1>
+                <h2 class="entry-subtitle">
+                    @advert.CategoryName
+                </h2>
+                <div class="">
+                    @ShareButtons.GetHtml(advert.Name + " on DuckRow.net")
+                </div>
+                <div class="">
+                    @Favourite.GetHtml(advert)
+                </div>
+                <div class="clear-fix"></div>
+            </div>
+            <div class="div-item-image col-md-4">
+                @if (!String.IsNullOrEmpty(advert.Image))
+                {
+                    <img src="@Href(advert.Image)" alt="@advert.Name" />
+                }
+
+
+            </div>
+            <br />
+            <div class="clear-fix"></div>
+            
+            <div class="div-item-footer col-md-12" style="padding-top:10px;">
+
+                <div class="col-md-12">
+                    <div class="col-md-8">
+                        <div class="event-description">
+                            <div class="mini-title">Description</div>
+                            @(new HtmlString(advert.Description))
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+
+                        <div class="classDetail-Advert">
+                            @Advertisements.SideBar()
+                            @Advertisements.MobileSideBar()
+                        </div>
+                    </div>
+                </div>
+                <br />
+
+                <div class="clear-fix"></div>
+
+                <div class="entry-header-custom-wrap contact-details">
+                    <p class="contact-name">
+                        <label>Contact Name:</label>
+                        <span id="frontend_instructor" class="event_custom">@advert.ContactName</span>
+                    </p>
+
+                    <p class="phone">
+                        <label>Phone:</label>
+                        <span id="frontend_phone" class="event_custom"><a href="tel://@phoneDigits">@advert.Phone</a></span>
+                    </p>
+
+                    @if (!String.IsNullOrEmpty(advert.Email))
+                    {
+                        <p class="email">
+                            <label>Email:</label>
+                            <span id="frontend_email" class="event_custom"><a href="@mailto">@advert.Email</a></span>
+                        </p>
+                    }
+                </div>
+
+                <div class="float-clear"></div>
+                
+                <div class="col-md-8">
+                    <div class="col-sm-2">Address </div>
+                    <div class="col-sm-10" style=" font-style:italic;">
+                        @if (!String.IsNullOrEmpty(advert.Address1))
+                        {
+                            <text>@advert.Address1 <br /></text>
+                        }
+                        @if (!String.IsNullOrEmpty(advert.Address2))
+                        {
+                            <text>@advert.Address2 <br /></text>
+                        }
+                        @if (!String.IsNullOrEmpty(advert.City))
+                        {
+                            <text>@advert.City <br /></text>
+                        }
+                        @if (!String.IsNullOrEmpty(advert.State))
+                        {
+                            <text>@advert.State <br /></text>
+                        }
+                    </div>
+                    <div class="col-sm-2">Website </div>
+                    <div class="col-sm-10" style="font-style:italic;">
+                        @if (!String.IsNullOrEmpty(advert.Website))
+                        {
+                            <text><a href="@advert.Website">@advert.Website</a> <br /></text>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-4">
+                </div>
+
+                
+                <div class="float-clear"> </div>
+                <br/>
+                <br/>
+                <div class="col-md-8">
+                    @Advertisements.HorizontalBar()
+                    @Advertisements.MobileHorizontalBar()
+                </div>
+                <div class="col-md-4">
+                </div>
+                <div class="float-clear"> </div>
+            </div> @*//end div footer*@
+
+        </div>
+
+        <div class="float-clear"></div>
+
+
+    </div>
+}

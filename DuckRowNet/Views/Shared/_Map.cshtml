@@ -1,0 +1,271 @@
+﻿@model DuckRowNet.Models.LocationModel
+@{ 
+    int width = 800;
+    int height = 300;
+    bool draggablePOI = true;
+    bool includeSearch = Model.IncludeSearch;
+    string strPopup = "";
+    string divWidth = width.ToString() + "px";
+    string divHeigth = height.ToString() + "px";
+
+    double latitude = Convert.ToDouble(Model.Latitude);
+    double longitude = Convert.ToDouble(Model.Longitude);
+
+
+string imageLink = "../../Images/poi.png";
+
+    <script src="http://open.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js?key=Fmjtd%7Cluur2l6bnu%2Cas%3Do5-90yg0u"></script>
+    <script type="text/javascript">
+
+
+        var searchLoop = 1;
+
+        var map;
+        var myLL=new MQA.LatLng(@latitude, @longitude);
+		var poi =new MQA.Poi(myLL);
+
+
+      MQA.EventUtil.observe(window, 'load', function () {
+
+          /*Create an object for options*/
+          var options = {
+              elt: document.getElementById('map_canvas'),       /*ID of element on the page where you want the map added*/
+              zoom: 13,                                  /*initial zoom level of the map*/
+              latLng: { lat: @latitude, lng: @longitude},   /*center of map in latitude/longitude */
+              mtype: 'osm',                              /*map type (osm)*/
+              bestFitMargin: 0,                          /*margin offset from the map viewport when applying a bestfit on shapes*/
+              zoomOnDoubleClick: true                    /*zoom in when double-clicking on map*/
+          };
+
+          /*Construct an instance of MQA.TileMap with the options object*/
+          window.map = new MQA.TileMap(options);
+
+          MQA.withModule('largezoom', 'smallzoom', /*'viewoptions', */'geolocationcontrol', 'insetmapcontrol', 'mousewheel','nominatim', function () {
+
+              if("@draggablePOI.ToString().ToLower()" == "true")
+              {
+                    map.addControl(
+                        new MQA.LargeZoom(),
+                        new MQA.MapCornerPlacement(MQA.MapCorner.TOP_LEFT, new MQA.Size(5, 5))
+                    );
+                    map.addControl(
+                        new MQA.GeolocationControl(),
+                        new MQA.MapCornerPlacement(MQA.MapCorner.TOP_RIGHT, new MQA.Size( 10, 10))
+                    );
+              }
+              else
+              {
+                    map.addControl(
+                        new MQA.SmallZoom(),
+                        new MQA.MapCornerPlacement(MQA.MapCorner.TOP_LEFT, new MQA.Size(5, 5))
+                    );
+              }
+
+
+            map.enableMouseWheelZoom();
+
+            //Create POI
+            //var poi =new MQA.Poi( {lat:@latitude, lng:@longitude} );
+
+            var icon=new MQA.Icon("@imageLink",20,64);
+            poi.setIcon(icon);
+            poi.setShadowOffset({x:-1,y:-34});
+
+//            var icon=new MQA.Icon("@imageLink/poi_pin.png",40,74);
+//            poi.setIcon(icon);
+//            poi.setShadowOffset({x:16,y:-42});
+
+            if("@strPopup" != ""){
+                poi.setRolloverContent("@strPopup");
+            }
+            //poi.setInfoContentHTML('InfoWindow Content for New York, NY');
+            poi.draggable=@draggablePOI.ToString().ToLower();
+
+            map.addShape(poi);
+          });
+
+
+          if("@draggablePOI.ToString().ToLower()" == "true")
+          {
+            MQA.EventManager.addListener(map, "click", handleClick);
+            MQA.EventManager.addListener(poi,"dragend",handleDrag);
+          }
+
+          if("@includeSearch.ToString().ToLower()" == "true")
+          {
+            $("#createButton").hide(); //.css({"visibility":"hidden", "display":"none"});
+            $("#mapDiv").hide(); //css({"visibility":"hidden", "display":"none"});
+
+            $("#addressSearchButton").show();
+          }
+          else
+          {
+            $("#addressSearchButton").hide();
+          }
+
+      });
+
+        function handleClick(evt){
+            poi.setLatLng(evt.ll);
+            var strResult = "latitude: " + evt.ll.lat + " <br/> longitude: " + evt.ll.lng;
+            $('input[name=Longitude]').val(evt.ll.lng);
+            $('input[name=Latitude]').val(evt.ll.lat);
+        }
+
+        function handleDrag(evt){
+            var b = this.getLatLng();
+            var strResult = "latitude: " + b.lat + " <br/> longitude: " + b.lng;
+            $('input[name=Longitude]').val(b.lng);
+            $('input[name=Latitude]').val(b.lat);
+        }
+
+        function searchAddressWS(){
+            var strAddress =document.getElementById("strSearch").value;
+            //var searchURL = "http://open.mapquestapi.com/geocoding/v1/address?&inFormat=kvp&outFormat=json&location=" + strAddress + "&thumbMaps=false&maxResults=1";
+            var searchURL = "http://www.mapquestapi.com/geocoding/v1/address?&key=Fmjtd%7Cluur2l6bnu%2Cas%3Do5-90yg0u&inFormat=kvp&outFormat=json&location=" + strAddress + "&thumbMaps=false&maxResults=1";
+            alert(strAddress);
+
+            $.ajax({
+              type: "GET",
+              url: searchURL,
+              async: false,
+              dataType: "json",
+              //data: data,
+              success: function(data){
+                alert("success");
+              }
+            });
+
+
+        }
+
+        function searchAddress(){
+            //alert("hi");
+            var strAddress = ""; //document.getElementById("strSearch").value;
+            var strAddress1 = $("#Address1").val();
+            var strAddress2 = $("#Address2").val();
+            var strCity = $("#City").val();
+            var strCounty = $("#County").val();
+            var strPostcode = $("#Postcode").val();
+            var strCountry = $("#Country").val();
+
+            if(strAddress1 != "" && searchLoop == 1) {
+                strAddress = strAddress1;
+            }
+            if(strAddress2 != "" && searchLoop == 1) {
+                if(strAddress == ""){
+                    strAddress = strAddress2;
+                }else{
+                    strAddress = strAddress + ", " + strAddress2;
+                }
+            }
+            if(strCity != "") {
+                if(strAddress == ""){
+                    strAddress = strCity;
+                }else{
+                    strAddress = strAddress + ", " + strCity;
+                }
+            }
+            if(strCounty != "" && strCounty != undefined) {
+                if(strAddress == ""){
+                    strAddress = strCounty;
+                }else{
+                    strAddress = strAddress + ", " + strCounty;
+                }
+            }
+            if(strPostcode != "" && strPostcode.toLowerCase() != "none"
+            && strPostcode != "-") {
+                if(strAddress == ""){
+                    strAddress = strPostcode;
+                }else{
+                    strAddress = strAddress + ", " + strPostcode;
+                }
+            }
+            if(strCountry != "") {
+                if(strAddress == ""){
+                    strAddress = strCountry;
+                }else{
+                    strAddress = strAddress + ", " + strCountry;
+                }
+            }
+
+            //alert(strAddress);
+            searchBegin(strAddress);
+        }
+
+        function searchBegin(address){
+
+            MQA.withModule('geocoder', function() {
+
+            MQA.Geocoder.geocode(
+                /*Build a location array to be geocoded.*/
+                address,
+                /*No geocode options specified, just using defaults.*/
+                null,
+                /*No map specified just using as a service.*/
+                null,
+                /*Callback function to execute when geocoding is complete.*/
+                renderGeocodeResults
+              );
+            });
+
+
+        }
+
+
+        function renderGeocodeResults(response) {
+            //alert("response");
+            var result = "";
+
+            if (response.results.length > 0 && response.results[0].locations.length > 0)
+            {
+                poi.setLatLng(response.results[0].locations[0].latLng);
+                map.setCenter(response.results[0].locations[0].latLng);
+                $("#Latitude").val(response.results[0].locations[0].latLng.lat );
+                $("#Longitude").val(response.results[0].locations[0].latLng.lng );
+
+                //try to assign county if it is blank.
+                var county = $("#State").val();
+                if(county == "" || county == undefined){
+                    var searchCounty = response.results[0].locations[0].adminArea4; //result could be "County Dublin", remove County for drop down
+                    $("#State").val(searchCounty.substring(7));
+                    county = $("#State").val();
+                    if(county == ""|| county == undefined){
+                         $("#State").val(searchCounty);
+                    }
+                }
+
+                alert("Check the map to see if we found the right location. Click the map or drag the icon to move it.");
+
+            }
+            else
+            {
+                //search for city only.
+                if(searchLoop == 1) {
+                    searchLoop = 2;
+                    searchAddress();
+                }
+                else{
+                    alert("We could not find that address. Use the map to find the location and click to mark it.");
+                }
+            }
+
+            $("#divName").show();
+            $("#divDesc").show();
+            $("#createButton").css({"visibility":"visible", "display":"inline"});
+            $("#mapDiv").css({"visibility":"visible", "display":"inline"});
+
+            $("#addressSearchButton").hide();
+          }
+
+
+
+    </script>
+
+
+
+    <div id="map_canvas" style="width:@divWidth; height:@divHeigth"></div>
+
+}
+
+

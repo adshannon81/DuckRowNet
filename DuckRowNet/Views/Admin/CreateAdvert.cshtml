@@ -1,0 +1,426 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@model DuckRowNet.Helpers.Object.GroupClass
+@{
+    ViewBag.Title = "Create an Advert";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    CompanyDetails companyDetails = ViewBag.CompanyDetails;
+    GroupClass advert = ViewBag.Advert;
+    IEnumerable<dynamic> counties = ViewBag.Counties;
+
+    ViewBag.CompanyName = companyDetails.Name;
+
+    string companyEmail = companyDetails.Email;
+    string task = ViewBag.Task;
+    bool success = ViewBag.Success;
+
+    //Validation
+    var isValid = ViewBag.isValid;
+    var createErrorMessage = ViewBag.CreateErrorMessage;
+    bool freeAdvert = ViewBag.FreeAdvert;
+
+
+
+}
+
+
+@section css {
+    <link type="text/css" href="@Href("~/Content/multistep_small.css")" rel="stylesheet">
+    <style>
+        .cke {
+            visibility: hidden;
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="@Href("~/ckeditor/skins/kama/editor.css?t=D6IE")">
+    <link type="text/css" href="@Href("~/Content/jquery.fancybox.css")" rel="stylesheet" />
+}
+
+@section scripts {
+    <script type="text/javascript" src="@Href("~/Scripts/multistep.js")"></script>
+    <script type="text/javascript" src= "@Href("~/ckeditor/ckeditor.js")"></script>
+    <script type="text/javascript" src= "@Href("~/ckeditor/adapters/jquery.js")"></script>
+
+<script type="text/javascript">
+	    $(function () {
+                        CKEDITOR.on('instanceCreated', function (e) {
+                            e.editor.on('change', function (ev) {
+                                var dataLength = ev.editor.getData()
+                                    .replace(/<[^>]*>/g, '')
+                                    .replace(/\s+/g, ' ')
+                                    .replace(/&\w+;/g, 'X')
+                        .replace(/^\s*/g, '')
+                        .replace(/\s*$/g, '')
+                        .length;
+
+                if (dataLength > 1000) {
+                    document.getElementById('charCount').innerHTML = 'character limit reached';
+                    ev.editor.execCommand('undo');
+                }
+                else {
+                    document.getElementById('charCount').innerHTML = (1000 - dataLength) + ' characters remanining';
+                }
+            });
+	        });
+
+	        var config = {
+                toolbar:
+
+                    [
+		            { name: 'basicstyles', items: ['Bold', 'Italic', 'Strike', '-', 'RemoveFormat'] },
+		            { name: 'paragraph', items: ['BulletedList', '-', 'Outdent', 'Indent', '-',
+                        'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock']
+		            },
+		            { name: 'links', items: ['Link', 'Unlink'] }
+		        ],
+	            extraPlugins: 'onchange'
+	        };
+	        config.resize_maxWidth = 600;
+	        config.resize_maxHeight = 500;
+	        config.disableNativeSpellChecker = false;
+	        config.MaxLength = 1000;
+
+	        CKEDITOR.replace('advertDescription', config);
+	        //$('#companyDescription').ckeditor(config);
+
+
+	    });
+
+</script>
+
+@*//loading image when form submitted*@
+<script type="text/javascript">
+
+        $(document).ready(function () {
+            $("#cmdCreate").click(function () {
+                $(this).hide();
+                $(".loading").css("display", "block");
+            });
+            $(".popup img[title]").tooltip({
+                position: 'center right',
+                effect: 'slide',
+                offset: [25, -2]
+            });
+        });
+
+</script>
+
+@*//loading categories and sub-categories*@
+<script type="text/javascript">
+        $.getJSON('@Href("~/json/Menu/Category")', null, function (data) {
+            var items = '';
+            $.each(data, function (i, item) {
+                items += '<option value=' + item.Value;
+                if(item.Value == '@advert.CategoryID.ToString()') {
+                    items += ' selected="selected" ';
+                }
+                items += '>' + item.Text + '</option>';
+            });
+            $('#advertCategory').html(items);
+            $("#advertCategory").change(function () {
+                $("#advertSubCategory").html("");
+                $("#advertSubCategory").prop("disabled", true);
+                getSubCategories();
+                $("#advertSubCategory").prop("disabled", false);
+            });
+
+            //$("#advertCategory").val($("#advertCategory option:first").val());
+            getSubCategories();
+        });
+
+        function getSubCategories() {
+                var Param = { CategoryID: $("#advertCategory > option:selected").attr("value") };
+                $.getJSON("@Href("~/json/Menu/SubCategory/")", Param, function (data) {
+                    var items = "";
+                    $.each(data, function (i, item) {
+                        items += '<option value=' + item.Value;
+                        if(item.Value == '@advert.SubCategoryID.ToString()') {
+                            items += ' selected="selected" ';
+                        }
+                        items += '>' + item.Text + '</option>';
+                    });
+                    $("#advertSubCategory").html(items);
+                });
+        }
+
+    function updateCost() {
+        //alert($("#selectType").val());
+        if ($("#selectType").val() == "Premium") {
+            $("#advertCost").val("€5");
+        } else {
+            $("#advertCost").val("€3");
+        }
+    };
+
+    function readURL(input) {
+        if (input.files && input.files[0]) {
+            $('#loading').show() //.css('visibility', 'visible')
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                $('#loading').hide() //.css('visibility', 'hidden')
+                $('#imagePreviewBox').show() //.css('visibility', 'visible')
+                $('#advertImageView').attr('src', e.target.result);
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        }
+
+    }
+</script>
+    }
+
+
+<div class="container" style="max-width:750px;">
+
+    @if (!isValid)
+    {
+        <p class="message error">
+            @if (createErrorMessage.IsEmpty())
+            {
+                @:Please correct the errors and try again.
+    }
+            else
+            {
+                @createErrorMessage
+            }
+        </p>
+    }
+
+    @if (task == "delete")
+    {
+        if (success)
+        {
+            <h3>Advert Deleted!</h3>
+            <div>
+
+                <p><a href="@Href("~/")">return</a></p>
+
+            </div>
+        }
+        else {
+            <h3>Unable to delete the advert at this time. Try agian later.</h3>
+            <div>
+
+                <p><a href="@Href("~/")">return</a></p>
+
+            </div>
+        }
+    }
+    else
+    {
+
+
+        if (task =="edit")
+        {
+            <h2 style="margin-bottom:10px;">Edit your Advert</h2>
+        }
+        else
+        {
+            <h2 style="margin-bottom:10px;">Create an Advert</h2>
+        }
+
+        <div id="multistep_wrapper">
+            <div id="navigation" style="display:none;">
+                <ul>
+                    <li class="selected">
+                        <a href="#">Basic</a>
+                    </li>
+                    <li>
+                        <a href="#">Contact </a>
+                    </li>
+                    <li>
+                        <a href="#">Details</a>
+                    </li>
+                    <li>
+                        <a href="#">Confirm</a>
+                    </li>
+                </ul>
+            </div>
+            <div id="steps" style="width: 3000px;">
+                <form id="formElem" name="formElem" class="form-horizontal" enctype="multipart/form-data" action="" method="post">
+                    @Html.AntiForgeryToken()
+                    <fieldset class="step">
+                        <div class="form-group">
+                            <label class="control-label col-xs-3" for="advertContactName">Contact Name</label>
+                            <div class="col-xs-9">
+                                <input type="text" class="form-control" id="advertContactName" name="advertContactName" value="@advert.ContactName" />
+                            </div>
+                            <label style="width:650px;clear:both;height:0px;margin-top:-8px;"><br /> </label>
+
+                            <label class="control-label col-xs-3" for="advertEmail">Contact Email</label>
+                            <div class="col-xs-9">
+                                <input type="text" class="form-control" id="advertEmail" name="advertEmail" disabled="disabled" readonly="readonly" @if (String.IsNullOrEmpty(companyEmail)) { <text> value="@HttpContext.Current.User.Identity.Name" </text>  } else { <text> value="@companyEmail" </text> } />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label col-xs-3" for="advertCategory">Category</label>
+                            <div class="col-xs-9">
+                                <select id="advertCategory" name="advertCategory" class="form-control"></select>
+                            </div>
+                            <label style="width:650px;clear:both;height:0px;margin-top:-8px;"><br /> </label>
+                            <label class="control-label col-xs-3" for="advertSubCategory">Sub-Category</label>
+                            <div class="col-xs-9">
+                                <select id="advertSubCategory" name="advertSubCategory" class="form-control"></select>
+                            </div>
+                        </div>
+
+
+                    </fieldset>
+                    <fieldset class="step">
+                        <div class="form-group">
+                            <label class="control-label col-xs-3" for="advertAddress1">Address</label>
+                            <div class="col-xs-9">
+                                <input type="text" class="form-control" id="advertAddress1" name="advertAddress1" allowNull="true" value="@advert.Address1" />
+                            </div>
+                            <label class="control-label col-xs-3" for="advertAddress2"></label>
+                            <div class="col-xs-9">
+                                <input type="text" class="form-control" id="advertAddress2" name="advertAddress2" allowNull="true" value="@advert.Address2" />
+                            </div>
+                            <label class="control-label col-xs-3" for="advertCity">City</label>
+                            <div class="col-xs-9">
+                                <input type="text" class="form-control" id="advertCity" name="advertCity" allowNull="true" value="@advert.City" />
+                            </div>
+
+                            <label class="control-label col-xs-3" for="advertState">County</label>
+                            <div class="col-xs-9">
+                                <select name="advertState" class="form-control" allowNull="true">
+                                    <option value="">Select...</option>
+                                    @foreach (var county in counties)
+                                    {
+                                        <option value="@county.Name" @{if (county.Name == advert.State) { <text> selected="selected" </text> ; }}>@county.Name</option>
+
+                                    }
+
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-xs-3" for="advertPhone">Phone</label>
+                            <div class="col-xs-9">
+                                <input type="tel" class="form-control" id="advertPhone" name="advertPhone" allowNull="true" value="@advert.Phone" />
+                            </div>
+                            <label style="width:650px;clear:both;height:0px;"><br /> </label>
+
+                            <label class="control-label col-xs-3" for="advertWebsite">Website</label>
+                            <div class="col-xs-9">
+                                <input type="text" class="form-control" id="advertWebsite" name="advertWebsite" allowNull="true" value="@advert.Website" />
+                            </div>
+                        </div>
+
+                    </fieldset>
+                    <fieldset class="step">
+                        <div class="form-group">
+                            <label class="control-label col-xs-3" for="advertName">Advert Title</label>
+                            <div class="col-xs-9">
+                                <input type="tel" class="form-control" id="advertName" name="advertName" value="@advert.Name" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label col-xs-3" for="advertImage">Image</label>
+                            <div class="col-xs-9">
+                                <input allowNull="true" type="file" title="this is the image that will appear with this advert" name="advertImage" onchange="readURL(this);" accept="image/gif, image/jpeg, image/jpg, image/png" />
+                                <span class="popup"><img alt="?" src="@Href("~/Images/question.png")" title="The Image must be less than 1Mb and we recommend a maximum height of 150px and maximum width of 280px" /></span>
+                                <input allowNull="true" type="text" id="ImageName" name="ImageName" style="visibility:hidden;display:none;" value="@advert.Image" />
+
+                            </div>
+                        </div>
+
+
+                        @{
+                            var imageURL = Href("~/Images/CompanyImages/QT_small.png");
+                            if (!advert.Image.IsEmpty())
+                            {
+                                imageURL = Href(advert.Image);
+                            }
+                        }
+
+                        <div id="loading" class="form-group" style="display:none;">
+                            <label class="control-label col-xs-3" for="loadingImage"></label>
+                            <div class="col-xs-9">
+                                <img id="loadingImage" src="@Href("~/Images/ajax-loader_small.gif")" alt="Type Image" />
+                            </div>
+                        </div>
+                        <div id="imagePreviewBox" class="form-group" @if (advert.Image.IsEmpty()) { <text> style="display:none;" </text> }>
+                            <label class="control-label col-xs-3" for="advertImageView">Preview</label>
+                            <div class="col-xs-9">
+                                <img id="advertImageView" style="max-height:75px; max-width:140px;" src="@imageURL" alt="Type Image" />
+                            </div>
+                        </div>
+
+
+                        <div class="form-group">
+                            <textarea allowNull="true" name="advertDescription" id="advertDescription" cols="40" rows="5" @if (advert.Description == "Enter a Description...") { <text> onFocus="this.value=''; this.onfocus=null;" </text> }> @advert.Description</textarea>
+                            <span id="charCount" style="font-size:10px; text-align:right; float:right;margin-top:5px;">1000 characters remaining</span>
+
+                        </div>
+
+                    </fieldset>
+
+                    <fieldset class="step">
+                        @*<legend>Confirm</legend>*@
+
+                        <div class="form-group">
+                            <label class="control-label col-xs-3" for="advertCost">Cost</label>
+                            <div class="col-xs-9">
+                                @if ((task == "edit" || freeAdvert)) //&& !advert.BillingID.IsEmpty())
+                                {
+                                    <input type="text" id="advertCost" class="form-control" name="advertCost" title="advertCost" readonly="readonly" value="free" />
+                                }
+                                else
+                                {
+                                    <input type="text" id="advertCost" class="form-control" name="advertCost" title="advertCost" readonly="readonly" value="€3" />
+                                }
+                            </div>
+                        </div>
+
+                        @if (task == "edit" || freeAdvert)
+                        {
+                            <p class="submit">
+                                <button type="submit" class="btn btn-default" id="cmdCreate">Update Your Advert</button>
+                                <img class="loading" style="display:none; height:32px; width:32px; cursor:pointer; padding:5px; margin: 0px auto;" src="@Href("~/Images/ajax-loader_small.gif")" />
+                            </p>
+
+                            @*if (freeAdvert)
+                            {
+                                if (advert.BillingID.IsEmpty())
+                                {
+                                    @Payment.Paypal_advert.PayButton(advert)
+                                }
+                            }*@
+                        }
+                        else
+                        {
+                            <p class="submit">
+                                <button type="submit" class="btn btn-default" id="cmdCreate">Create This Advert</button>
+                                <img class="loading" style="display:none; height:32px; width:32px; cursor:pointer; padding:5px; margin: 0px auto;" src="@Href("~/Images/ajax-loader_small.gif")" />
+                            </p>
+                        }
+                        <input type="text" id="validateForm" name="validateForm" style="visibility:hidden; " value="True" />
+                        <input type="text" id="advertID" name="advertID" style="visibility:hidden; " value="@advert.ID" />
+                    </fieldset>
+                </form>
+            </div>
+            <div id="navigation_bottom" style="display:none;">
+                <ul>
+                    <li class="right">
+                        <a id="nextSlide" href="#">Next</a>
+                    </li>
+
+                </ul>
+            </div>
+
+            <div id="navigation_bottom" style="display:none;">
+                <ul>
+                    <li class="right">
+                        <a id="nextSlide" href="#">Next</a>
+                    </li>
+
+                </ul>
+            </div>
+
+
+        </div>
+                            }
+</div>

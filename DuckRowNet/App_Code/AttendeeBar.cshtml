@@ -1,0 +1,304 @@
+﻿@using DuckRowNet.Helpers;
+@using DuckRowNet.Helpers.Object;
+@helper getHTML(GroupClass classItem, CompanyDetails companyDetails)
+{
+
+var link = Href("~/json/Function/" + companyDetails.Name + "?");
+DAL db = new DAL();
+
+    <script>
+        function toggleAttendeeBar() {
+            if($("#attendeeBar").is(":visible") ) {
+                $("#attendeeBar").hide("blind", { direction: "vertical" }, 1000);
+            }
+            else{
+                $("#attendeeBar").show("blind", { direction: "vertical" }, 1000);
+            }
+        }
+
+        $(document).ready(function () {
+            $("#classDates").change(function () {
+                showAList($(this).val());
+            });
+
+            $("#attendeeBar").hide();
+
+            $("input[type='checkbox']").change(function () {
+                $("#saving").fadeIn(600);
+                $("#saving").text("saving changes...");
+                var checked = false;
+                if ($(this).is(":checked")) {
+                    checked = true;
+                }
+
+                $.get('@link' + 'function=updateAttendee&details=' + $(this).attr("id") + '&val=' + checked, function (data) {
+                    if (data.trim() == "True") {
+                        $("#saving").text("changes saved!");
+                        //$("#saving").hide();
+                        //$("#save").fadeIn(600).delay(2000).fadeOut(600);
+                    } else {
+                        $("#saving").text("failed to save changes!");
+                        //$("#saving").hide();
+                        //$("#fail").fadeIn(600).delay(4000).fadeOut(600);
+                    }
+                });
+
+                //check if for entire class and check all
+                if ($(this).attr("id").indexOf('cancelled_') == 0) {
+                    if ($(this).attr("id").indexOf('cancelled_all_') == 0) {
+                        var bookingDetailsID = $(this).attr("id").substring(14);
+
+                        $('input[type=checkbox]').each(function () {
+                            if ($(this).attr("id").indexOf(bookingDetailsID, $(this).attr("id").length - bookingDetailsID.length) !== -1) {
+                                if ($(this).attr("id").indexOf('cancelled_') == 0) {
+                                    if ($(this).attr("id").indexOf('cancelled_all_') != 0) {
+
+                                        if (checked) {
+                                            $(this).attr('checked', 'checked');
+                                        }
+                                        else {
+                                            $(this).removeAttr('checked');
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    else {
+                        $('input[type=checkbox]').each(function () {
+                            if ($(this).attr("id").indexOf('cancelled_all_') == 0) {
+                                if (checked) {
+                                    $(this).attr('checked', 'checked');
+                                }
+                                else {
+                                    $(this).removeAttr('checked');
+                                }
+                            }
+                        });
+                    }
+                }
+
+
+            });
+
+
+
+
+        });
+
+        //                $(document).ready(function () {
+        function showAList(aDate) {
+            $(".attendeeList").hide();
+            //$("#titleHead").text($("#titleHead_" + aDate).text());
+            $("#users_" + aDate).show();
+            //$("#dates_" + aDate).css("background-color",  "#E1E7EA");
+        }
+
+
+
+        //});
+    </script>
+
+    <div id="attendeeBar" class="agenda-view ">
+
+        <script>
+
+        </script>
+
+        <select id="classDates" name="classDates" class="longSelect">
+            <option value="all" selected="selected">All Attendees</option>
+            @foreach (DateTime cd in classItem.ClassDates)
+            {
+                <option value="@cd.ToString("yyyyMMddHHmmss")">Attendees for @cd.ToString("ddd dd MMM yyyy @ HH:mm")</option>
+            }
+        </select>
+        <div class="clear-both"></div>
+
+
+        @*<h2 id="titleHead" style="margin-top: -5px;">All Attendees</h2>*@
+        @{
+
+            var clients = db.getAttendeeList_Detailed(classItem.ID.ToString(), false, "bookingDetails");
+            List<ClientAttendance> users = new List<ClientAttendance>();
+            List<string> mailtoUsers = new List<string>();
+
+
+            if (clients.Count() != 0)
+            {
+                //show complete list
+                <text>
+
+                    <div class="float-left">
+                        <span id="users_all" class="attendeeList" style="padding:0px;">
+
+
+                            <table class="table_ClientList">
+                                <tr class="table_ClientList_Head">
+                                    <td style="width:120px;">Name</td>
+                                    <td style="width:150px;">Email</td>
+                                    <td style="width:100px;">Phone</td>
+                                    <td>Paid</td>
+                                    <td>Cancelled</td>
+                                    <td style="display:none; visibility:hidden;">Date</td>
+                                </tr>
+
+                                @{
+                                    string uEmail = "begin";
+                                    ClientAttendance user = new ClientAttendance();
+
+                                    foreach (var client in clients)
+                                    {
+                                        if (uEmail != "begin" && uEmail != client.BookingID.ToString())
+                                        {
+                                            users.Add(user);
+                                            mailtoUsers.Add(user.Email);
+                                            user = new ClientAttendance();
+                                        }
+                                        uEmail = client.BookingID.ToString();
+                                        user.BookingDetailsID = client.BookingID.ToString();
+                                        user.UserID = client.UserID;
+                                        user.FirstName = client.Firstname;
+                                        user.LastName = client.Lastname;
+                                        user.Email = client.Email;
+                                        user.Phone = client.Phone;
+                                        user.Type = Functions.PersonType.User;
+                                        if (client.UserType == "Client") 
+                                        {
+                                            user.Type = Functions.PersonType.Client;
+                                        }
+                                        user.Paid.Add(client.ScheduleDate, client.paid);
+                                        user.Cancelled.Add(client.ScheduleDate, Convert.ToBoolean(client.Cancelled));
+
+                                        var sID = client.ScheduleID.ToString();
+                                        var sDate = client.ScheduleDate;
+                                        var cp = client.paid;
+                                        var cc = client.cancelled;
+
+                                        user.ScheduledItems.Add(new ScheduledItem(client.ScheduleID.ToString(), client.ScheduleDate,
+                                                client.paid, Convert.ToBoolean(client.Cancelled)));
+
+                                    }
+                                    if (clients.Count() != 0)
+                                    {
+                                        users.Add(user);
+                                        mailtoUsers.Add(user.Email);
+                                    }
+
+                                    foreach (ClientAttendance u1 in users)
+                                    {
+                                        var strLink = Href("~/Admin/Client/" + companyDetails.Name + "/" + u1.UserID.ToString());
+                                        if (u1.Type.ToString() == "Client")
+                                        {
+                                            strLink = Href("~/Admin/Client/" + companyDetails.Name + "/c_" + u1.UserID.ToString());
+                                        }
+                                        strLink = "parent.location = '" + strLink + "'";
+
+                                        <text>
+                                            <tr class="table_ClientList_Row">
+                                                <td onclick="@strLink" onmouseover="cursor='hand'">@u1.FirstName @u1.LastName</td>
+                                                <td onclick="@strLink" onmouseover="cursor='hand'">@u1.Email</td>
+                                                <td onclick="@strLink">@u1.Phone</td>
+                                                <td style="text-align:center;">
+                                                    <input type="checkbox" @if (u1.ScheduledItems.Where(p => p.Paid == false).Count() == 0) { <text> checked="checked" </text> } id="paid_all_@u1.BookingDetailsID" />
+                                                </td>
+                                                <td style="text-align:center;">
+                                                    <input type="checkbox" @if (u1.ScheduledItems.Where(c => c.Cancelled == false).Count() == 0) { <text> checked="checked" </text> } id="cancelled_all_@u1.BookingDetailsID" />
+                                                </td>
+                                            </tr>
+                                        </text>
+                                    }
+                                }
+                            </table>
+                            @*<a class="noHighlightLink" href="mailto:@String.Join(",",mailtoUsers.ToArray())" title="Email These Users" ><img  style="margin:  20px 10px 0px 10px;" alt="Email These Users" src="@Href("~/Images/back_small.png")" /></a>*@
+                            <div style="margin:  20px 10px 00px 10px;">
+                                @EmailForm.getHTML(companyDetails, mailtoUsers)
+                            </div>
+
+                            @*<h2 id="titleHead_all" style="visibility:hidden; display:none; margin-top: -5px;">All Attendees</h2>*@
+                        </span>
+
+                        @{
+
+                            DateTime dt = DateTime.Now;
+                            mailtoUsers = new List<string>();
+
+                            foreach (DateTime cd in classItem.ClassDates)
+                            {
+
+                                <span id="users_@cd.ToString("yyyyMMddHHmmss")" class="attendeeList" style="display:none; padding:0px;">
+                                    <table class="table_ClientList">
+                                        <tr class="table_ClientList_Head">
+                                            <td style="width:120px;">Name</td>
+                                            <td style="width:150px;">Email</td>
+                                            <td style="width:80px;">Phone</td>
+                                            <td></td>
+                                            <td>Cancelled</td>
+                                        </tr>
+
+                                        @foreach (ClientAttendance client in users)
+                                        {
+                                            var strLink = Href("~/Admin/Client/" + companyDetails.Name + "/" + client.UserID.ToString());
+                                            if (client.Type == Functions.PersonType.Client)
+                                            {
+                                                strLink = Href("~/Admin/Client/" + companyDetails.Name + "/c_" + client.UserID.ToString());
+                                            }
+                                            mailtoUsers.Add(user.Email);
+                                            strLink = "parent.location = '" + strLink + "'";
+
+                                            foreach (ScheduledItem sItem in client.ScheduledItems.Where(i => i.StartDate == cd))
+                                            {
+                                                <tr class="table_ClientList_Row">
+                                                    <td onclick="@strLink" onmouseover="cursor='hand'">@client.FirstName @client.LastName</td>
+                                                    <td onclick="@strLink" onmouseover="cursor='hand'">@client.Email</td>
+                                                    <td onclick="@strLink">@client.Phone</td>
+                                                    <td></td>
+                                                    @*<td style="text-align:center;"><input type="checkbox" @if (client.Paid[cd])
+                                                        {<text>checked="checked"</text>} id="paid_@cd.ToString("yyyyMMddHHmmss")_@client.BookingDetailsID"  /></td>*@
+                                                    <td style="text-align:center;">
+                                                        <input type="checkbox" @if (sItem.Cancelled) { <text> checked="checked" </text> } id="cancelled_@cd.ToString("yyyyMMddHHmmss")_@client.BookingDetailsID" />
+                                                    </td>
+                                                </tr>
+
+                                            }
+                                        }
+
+                                    </table>
+                                    @*<a class="noHighlightLink" href="mailto:@String.Join(",", mailtoUsers.ToArray())" title="Email These Users"  ><img  style="margin:  20px 10px 0px 10px;" alt="Email These Users" src="@Href("~/Images/back_small.png")" /></a>*@
+                                    <div style="margin:  20px 10px 00px 10px;">
+                                        @EmailForm.getHTML(companyDetails, mailtoUsers, classItem.Name)
+                                    </div>
+
+                                </span>
+                            }
+                        }
+
+
+                    </div>
+                </text>
+                            }
+                            else
+                            {
+                                <text>
+                                    <div class="float-left">
+                                        <h2 style="margin-top: -5px;">No Attendees yet.</h2>
+                                    </div>
+                                </text>
+                            }
+
+
+        }
+
+        <div class="float-clear" style="margin-bottom:10px;"></div>
+        <div class="float-left">
+
+        </div>
+        <div class="float-right">
+            <span id="saving" class="message-success" style=" text-align:right;"> </span>
+            @*<span id="save" class="message-success" style=" display:none; text-align:right;">...changes saved!</span>
+                <span id="fail" class="message-success" style=" display:none; text-align:right;">...failed to save changes!</span>*@
+        </div>
+        <div class="float-clear"></div>
+    </div>
+
+
+}

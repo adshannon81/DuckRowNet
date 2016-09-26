@@ -1,0 +1,187 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@helper getHTML(GroupClass classItem, CompanyDetails companyDetails, String returnURL = "")
+{
+    if (Authenticate.IsUserInRole(companyDetails.Name, "admin"))
+    {
+        Session["copyClass"] = classItem;
+
+        var deleteURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+                VirtualPathUtility.ToAbsolute("~/Admin/Delete/" + companyDetails.Name + "/" + classItem.ID);
+
+        var editURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+                    VirtualPathUtility.ToAbsolute("~/Admin/Edit/" + companyDetails.Name + "/" + classItem.ID);
+                    //VirtualPathUtility.ToAbsolute("~/Admin/Edit" + classItem.ClassType + "/" + companyDetails.Name + "/" + classItem.ID);
+
+        var duplicateURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+                    VirtualPathUtility.ToAbsolute("~/Admin/Create" + classItem.ClassType + "/" + companyDetails.Name);
+
+
+        //if(classItem.ClassType == "Appointment") {
+        //    editURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+        //            VirtualPathUtility.ToAbsolute("~/Admin/EditAppointment/" + companyDetails.Name + "/" + classItem.ID);
+        //}
+        //else if(classItem.ClassType == "Course") {
+        //    editURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+        //             VirtualPathUtility.ToAbsolute("~/Admin/EditCourse/" + companyDetails.Name + "/" + classItem.ID);
+        //}
+        //else if (classItem.ClassType == "Class")
+        //{
+        //    editURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+        //             VirtualPathUtility.ToAbsolute("~/Admin/EditClass/" + companyDetails.Name + "/" + classItem.ID);
+        //}
+        //else if (classItem.ClassType == "ClubEvent")
+        //{
+        //    editURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+        //             VirtualPathUtility.ToAbsolute("~/Admin/EditClubEvent/" + companyDetails.Name + "/" + classItem.ID);
+        //}
+
+        var remainingSpaces = "";
+
+        if (classItem.IsCourse)
+        {
+            remainingSpaces = classItem.RemainingCapacity.ToString();
+
+            if (classItem.RemainingCapacity > 0)
+            {
+                if (classItem.RemainingCapacity == 1)
+                {
+                    remainingSpaces += " space remaining";
+                }
+                else {
+                    remainingSpaces += " spaces remaining";
+                }
+            }
+            else {
+                if (classItem.CheckIfSpacesExist())
+                {
+                    remainingSpaces = "only limited single classes available";
+                }
+                else {
+                    remainingSpaces = "fully booked";
+                }
+            }
+        }
+
+
+
+
+        <text>
+
+            <div id="adminBar" class="toolbar row">
+					<div class="col-sm-1">
+                    @if (returnURL != "")
+                    {
+                        <a id="toolbar-return" class="toolbar-button noHighlightLink" style="margin-right: 5px;" href="@returnURL" title="return"></a>
+
+                    }
+					</div>
+					
+					<div class="col-sm-1">
+                    <div id="attendeeList" class="toolbar-button" onclick="toggleAttendeeBar()"></div>
+					</div>
+					<div class="col-sm-1">
+                    @if (UrlData[1] != "ThankYou" && classItem.CheckIfSpacesExist() && classItem.SubCategoryName != "Appointment")
+                    {
+                        <script>
+                        $(document).ready(function() {
+                            $("#imgReserve_load").hide();
+                            //$("#imgReserve").hide();
+
+                            $("#imgReserve").click(function(){
+                                $("#imgReserve").hide();
+                                $("#imgReserve_load").show();
+                                window.location.href = '@Href("~/Reserve/Confirmation/" + companyDetails.Name +"/" + classItem.ID)';
+                            });
+                        });
+
+                        </script>
+
+                        <div id="imgReserve" class="toolbar-button"></div>
+                        
+                        <img id="imgReserve_load" style="display:none; height:32px; width:32px; cursor:pointer;" src="@Href("~/Images/ajax-loader_small.gif")" />
+                    }
+					</div>
+
+                    @*<div class="col-sm-1">
+                        <div id="classFull" class="toolbar-button" ></div>
+                    </div>*@
+					
+					<div class="col-sm-6 admin-info">
+
+                @if (classItem.IsCourse)
+                {
+                    <span style="padding-left: 10px; line-height:30px;">Max Capacity: @classItem.MaxCapacity (@remainingSpaces)</span>
+                }
+				</div>
+				
+                <div id="dialog" class="float-left" style="visibility:hidden;display:none; padding:10px;" title="Confirmation Required">
+                    <p><b>Are you sure you want to delete this @classItem.ClassType? </b></p>
+                    <p>
+                        If the class is on-going, QT will email any clients attending this class if they have supplied an email address
+                        but we recommend that you contact each client directly.
+                    </p>
+                </div>
+				
+
+
+
+                    @* Only allow Edit if no bookings? *@
+                    @if (classItem.MaxCapacity == classItem.RemainingCapacity || classItem.SubCategoryName == "Appointment")
+                    {
+                        <script type="text/javascript">
+                    $(document).ready(function () {
+                        $("#dialogEdit").dialog({
+                            modal: true,
+                            resizable: false,
+                            bgiframe: true,
+                            width: 500,
+                            height: 230,
+                            autoOpen: false
+                        });
+
+                        $("#confirmEdit").click(function (e) {
+                            e.preventDefault();
+                            var theHREF = $(this).attr("href");
+                            $("#dialogEdit").css('visibility', 'visible');
+                            $("#dialogEdit").css('display', 'none');
+                            $("#dialogEdit").dialog('option', 'buttons', {
+                                "Confirm": function () {
+                                    window.location.href = theHREF;
+                                },
+                                "Cancel": function () {
+                                    $(this).dialog("close");
+                                }
+                            });
+                            $("#dialogEdit").dialog("open");
+                        });
+                    });
+
+                        </script>
+                        <div id="dialogEdit" class="float-left" style="visibility:hidden;display:none; padding:10px;" title="Confirmation Required">
+                            <p><b>Are you sure you want to edit this class? </b></p>
+                            <p>
+                                If clients are attending this already, you may want to keep them informed about any changes you make.<br />
+                                We recommend that you contact each client directly.
+                            </p>
+                        </div>
+                    }
+					
+					<div class="col-sm-1">
+                    <a id="toolbar-edit" class="toolbar-button noHighlightLink" href="@editURL" title="edit"></a>
+					</div>
+					
+					<div class="col-sm-1">
+                    <a id="toolbar-duplicate" class="toolbar-button noHighlightLink" href="@duplicateURL" title="duplicate"></a>
+					</div>
+					<div class="col-sm-1">
+                    <a id="toolbar-delete" class="toolbar-button confirmLink noHighlightLink" href="@deleteURL" title="delete"></a>
+					</div>
+ 
+            </div>
+            <div class="float-clear"></div>
+
+        </text>
+
+}
+}

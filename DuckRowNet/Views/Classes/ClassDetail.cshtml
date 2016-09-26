@@ -1,0 +1,97 @@
+﻿@using DuckRowNet.Helpers.Object;
+@{
+    ViewBag.Title = "Classes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    List<ClientAttendance> unconfirmedRequests = ViewBag.UnconfirmedRequests;
+    CompanyDetails companyDetails = (CompanyDetails)TempData["CompanyDetails"];
+    GroupClass groupClass = (GroupClass)TempData["GroupClass"];
+    ViewBag.FaceBookTags = "";
+
+}
+
+@section scripts {
+
+
+    <script type="text/javascript">
+
+    $(document).ready(function () {
+
+        $('.flexslider').flexslider();
+
+        $("featureSlide").slideDown("slow");
+
+            $("#dialog").dialog({
+                modal: true,
+                resizable: false,
+                bgiframe: true,
+                width: 500,
+                height: 230,
+                autoOpen: false
+            });
+
+
+            $(".confirmLink").click(function (e) {
+                e.preventDefault();
+                var theHREF = $(this).attr("href");
+                $("#dialog").css('visibility', 'visible');
+                $("#dialog").css('display', 'none');
+
+                $("#dialog").dialog('option', 'buttons', {
+                    "Confirm": function () {
+                        window.location.href = theHREF;
+                    },
+                    "Cancel": function () {
+                        $(this).dialog("close");
+                    }
+                });
+                $("#dialog").dialog("open");
+            });
+        });
+    </script>
+
+}
+
+
+@{
+    if (unconfirmedRequests.Count() > 0)
+    {
+        <text>
+            @ConfirmRequests.GetHtml(companyDetails, unconfirmedRequests)
+        </text>
+    }
+
+   
+        if (groupClass.SubCategoryName == "Appointment")
+        {
+            <text>
+                @AppoinmentDetail.getHTML(groupClass, companyDetails)
+            </text>
+        }
+        else
+        {
+            //Class List
+            ViewBag.MetaDescription = groupClass.Name + ", " + groupClass.SubCategoryName + " @ " + companyDetails.Name + ", " + companyDetails.State + " - DuckRow.Net";
+            ViewBag.Title = groupClass.SubCategoryName + " @ " + companyDetails.Name + ", " + companyDetails.State + " - DuckRow.Net";
+
+
+            var hostUrl = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
+            var pageURL = Request.Url.AbsoluteUri; // hostUrl + "/Classes/" + groupClass.Company + "/" + groupClass. groupClass.ID;
+            ViewBag.FaceBookTags = "<meta property=\"og:url\" content=\"" + pageURL + "\" /> " +
+                            "<meta property=\"og:type\" content=\"article\" />" +
+                            "<meta property=\"og:title\" content=\"" + ViewBag.Title + "\" />" +
+                            "<meta property=\"og:description\" content=\"" + ViewBag.MetaDescription + "\" />";
+            if (!String.IsNullOrEmpty(groupClass.Image))
+            {
+                var image = hostUrl + Href(groupClass.Image.Substring(1));
+                ViewBag.FaceBookTags += "<meta property=\"og:image\" content=\"" + image + "\" />";
+            }
+
+            <text>
+                @ClassDetail.getHTML(groupClass, companyDetails, ViewBag.Title, ViewBag.MetaDescription)
+            </text>
+        }
+
+
+
+}

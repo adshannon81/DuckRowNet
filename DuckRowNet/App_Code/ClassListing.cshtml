@@ -1,0 +1,536 @@
+﻿@using System.Globalization;
+@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@using System.Text.RegularExpressions;
+@helper getHTML(CompanyDetails companyDetails, int page = 1)
+{
+Session["Company"] = companyDetails.Name;
+var company = companyDetails.Name;
+var country = "IE";
+var location = "" + Request.Params["location"];
+var search = "" + Request.Params["search"];
+
+var subCategory = "";
+if(Session["subCategory"] != null)
+{
+    subCategory = Session["subCategory"].ToString();
+}
+
+int itemsPerPage = 24;
+
+string hostUrl = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
+string baseURL = "~/";
+if (companyDetails.Name != "DuckRow" && companyDetails.Name != null)
+{
+    baseURL += "Classes/" + companyDetails.Name + "/";
+}
+else
+{
+    company = "";
+}
+
+int button = 1;
+int count = 0;
+
+string currentCategory = "";
+string requiredDate = "";
+string currentLocation = "";
+
+List<GroupClass> classes = new List<GroupClass>();
+List<GroupClass> filteredClasses = new List<GroupClass>();
+
+var startDate = new DateTime(2000, 1, 1);
+var endDate = DateTime.Now.AddYears(20);
+
+
+if (IsPost || (page == 1 && subCategory == "" && Request.Params["page"] == null && Request.Params["cat"] == null && Request.Params["date"] == null))
+{
+    Session["list"] = null;
+}
+else
+{
+    if (Session["list"] != null)
+    {
+        classes = (List<GroupClass>)Session["list"];
+        Session["list"] = classes;
+
+        filteredClasses = classes;
+
+        var tempButton = 0;
+
+        if(!String.IsNullOrEmpty(subCategory))
+        {
+            filteredClasses = filteredClasses.Where(c => Functions.convertToSlug(c.SubCategoryName) == subCategory).ToList();
+        }
+
+        if (Request.Params["cat"] != null && Request.Params["cat"].ToString() != "")
+        {
+            currentCategory = Request.Params["cat"].ToString();
+            filteredClasses = filteredClasses.Where(c => c.CategoryName == currentCategory).ToList();
+        }
+
+        if (Request.Params["date"] != null && Request.Params["date"].ToString() != "")
+        {
+            requiredDate = Request.Params["date"].ToString();
+
+            if (String.Compare(requiredDate, "recent", true) == 0)
+            {
+                endDate = DateTime.Now;
+            }
+            else if (String.Compare(requiredDate, "thisweek", true) == 0)
+            {
+                startDate = DateTime.Now;
+                endDate = startDate.AddDays(7);
+            }
+            else if (String.Compare(requiredDate, "nextweek", true) == 0)
+            {
+                startDate = DateTime.Now;
+                endDate = startDate.AddDays(7);
+            }
+            else if (String.Compare(requiredDate, "nextmonth", true) == 0)
+            {
+                startDate = DateTime.Now;
+                endDate = startDate.AddMonths(1);
+            }
+
+            filteredClasses = filteredClasses.Where(c => c.NextClass() >= startDate).ToList();
+            filteredClasses = filteredClasses.Where(c => c.NextClass() <= endDate).ToList();
+            filteredClasses = filteredClasses.Where(c => c.IsAdvert != true).ToList();
+        }
+
+        if (Request.Params["loc"] != null && Request.Params["loc"].ToString() != "")
+        {
+            currentLocation = Request.Params["loc"].ToString();
+            filteredClasses = filteredClasses.Where(c => c.State == currentLocation).ToList();
+        }
+
+        if (page != 1 || (Request.Params["page"] != null && Request.Params["page"].ToString() != ""))
+        {
+            if (Request.Params["page"] != null && Request.Params["page"].ToString() != "")
+            {
+                int.TryParse(Request.Params["page"].ToString(), out tempButton);
+                page = tempButton;
+            }
+
+            if (page != 0 && filteredClasses.Count() > (page * 5) - 5)
+            {
+                button = page;
+            }
+        }
+    }
+}
+
+DAL db = new DAL();
+if (Session["list"] == null)
+{
+    classes = db.searchAllPublicClasses(location, search, company);
+    filteredClasses = classes;
+    Session["list"] = classes;
+}
+
+List<String> categories = new List<String>();
+foreach (var item in classes)
+{
+    if (!categories.Contains(item.CategoryName))
+    {
+        categories.Add(item.CategoryName);
+    }
+}
+categories.Sort();
+
+List<String> locations = new List<String>();
+foreach (var item in classes)
+{
+    if (!locations.Contains(item.State) && !item.State.IsEmpty())
+    {
+        locations.Add(item.State);
+    }
+}
+locations.Sort();
+
+if (filteredClasses.Count != 0)
+{
+    classes = filteredClasses;
+}
+
+
+    <div class="search-banner">
+
+        <!-- Place somewhere in the <body> of your page -->
+        <div class="flexslider">
+            <ul class="slides">
+                <!--<li>
+                    <img src= "@Href("~/Images/oconnell-bridge.jpg")" alt="Banner Image - DuckRow.Net" />
+                </li>
+                <li>
+                    <img src="@Href("~/Images/pilates-banner.jpg")" alt="Pilates Classes on DuckRow.Net" />
+                </li>-->
+                <li>
+                    <img src="@Href("~/Images/fireworks.jpg")" alt="Banner Image - DuckRow.Net" />
+                </li>
+                <!--
+                <li>
+                    <img src="@Href("~/Images/boxing2-banner.jpg")" alt="Boxing Classes on DuckRow.Net" />
+                </li>
+                <li>
+                    <img src="@Href("~/Images/yoga-banner.jpg")" alt="Yoga Classes on DuckRow.Net" />
+                </li>
+                <li>
+                    <img src="@Href("~/Images/push-up-banner.jpg")" alt="Fitness Classes on DuckRow.Net" />
+                </li>
+                <!--<li>
+                    <img src= "@Href("~/Images/boxing-banner.jpg")" alt="Boxcercise Classes on DuckRow.Net" />
+                </li>
+                <li>
+                    <img src= "@Href("~/Images/convention-centre.jpg")"  alt="Banner Image - DuckRow.Net"/>
+                </li>-->
+            </ul>
+        </div>
+        <div id="search-float">
+            <div id="searchBox">
+                <form method="post" action="#">
+
+                    <div class="search">
+                        <div class="search-div-text">
+                            <input id="search" class="searchTextBox" name="search" type="search" value="@search" placeholder="Search for classes in your area e.g. Pilates Kildare" />
+                            <input type="submit" class="search-button facebook fa-search" id="cmdSearch" value="" />
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+    <div style="height:1px; "></div>
+
+
+
+
+        <div id="search-resultsBox" class="container">
+            <div class="sidebar">
+
+
+                <div class="fb-page" data-href="https://www.facebook.com/duckrownet" data-tabs="timeline" data-width="300px" data-small-header="false" data-adapt-container-width="true" data-hide-cover="false" data-show-facepile="true"><div class="fb-xfbml-parse-ignore"><blockquote cite="https://www.facebook.com/duckrownet"><a href="https://www.facebook.com/duckrownet">DuckRow.Net</a></blockquote></div></div>
+
+                @Advertisements.SideBar()
+
+
+                <div id="search-menu">
+
+
+                    @{
+                        var cLink = Href(baseURL);
+                    }
+                    <h3 onclick="window.location='@cLink'" style="cursor:pointer;">All Dates</h3>
+                    <div class="search-menu-list">
+                        <div @if (requiredDate == "recent") { <text> class="search-menu-item2" </text>     } else { <text> class="search-menu-item" </text>     } onclick="window.location='@Href(baseURL + "?date=recent&cat=" + HttpUtility.HtmlEncode(currentCategory) + "&loc=" + HttpUtility.HtmlEncode(currentLocation))'">Recent</div>
+                        <div @if (requiredDate == "thisweek") { <text> class="search-menu-item2" </text>     } else { <text> class="search-menu-item" </text>     } onclick="window.location='@Href(baseURL + "?date=thisweek&cat=" + HttpUtility.HtmlEncode(currentCategory) + "&loc=" + HttpUtility.HtmlEncode(currentLocation))'">This Week</div>
+                        <div @if (requiredDate == "nextweek") { <text> class="search-menu-item2" </text>     } else { <text> class="search-menu-item" </text>     } onclick="window.location='@Href(baseURL + "?date=nextweek&cat=" + HttpUtility.HtmlEncode(currentCategory) + "&loc=" + HttpUtility.HtmlEncode(currentLocation))'">Next Week</div>
+                        <div @if (requiredDate == "nextmonth") { <text> class="search-menu-item2" </text>     } else { <text> class="search-menu-item" </text>     } onclick="window.location='@Href(baseURL + "?date=nextmonth&cat=" + HttpUtility.HtmlEncode(currentCategory) + "&loc=" + HttpUtility.HtmlEncode(currentLocation))'">Next Month</div>
+                    </div>
+                    @{
+                        cLink = Href(baseURL);
+                    }
+                    <h3 onclick="window.location='@cLink'" style="cursor:pointer;">All Categories</h3>
+                    <div class="search-menu-list">
+                        @foreach (string category in categories)
+                        {
+                            cLink = Href(baseURL) + "?cat=" + HttpUtility.HtmlEncode(category);
+                            var link = Href(baseURL + "?date=" + HttpUtility.HtmlEncode(requiredDate)
+                                + "&cat=" + HttpUtility.HtmlEncode(category)
+                                + "&loc=" + HttpUtility.HtmlEncode(currentLocation));
+                            if (currentCategory == category)
+                            {
+                                <text><div class="search-menu-item2" onclick="window.location='@link'">@category</div></text>
+                            }
+                            else
+                            {
+                                <text><div class="search-menu-item" onclick="window.location='@link'">@category</div></text>
+                            }
+                        }
+                    </div>
+                    @{
+                        cLink = Href(baseURL);
+                    }
+                    <h3 onclick="window.location='@cLink'" style="cursor:pointer;">All Locations</h3>
+                    <div class="search-menu-list">
+                        @foreach (string loc in locations)
+                        {
+                            var link = Href(baseURL + "?date=" + HttpUtility.HtmlEncode(requiredDate)
+                                + "&cat=" + HttpUtility.HtmlEncode(currentCategory)
+                                + "&loc=" + HttpUtility.HtmlEncode(loc));
+                            if (currentLocation == loc)
+                            {
+                                <text><div class="search-menu-item2" onclick="window.location='@link'">@loc</div></text>
+                            }
+                            else
+                            {
+                                <text><div class="search-menu-item" onclick="window.location='@link'">@loc</div></text>
+                            }
+
+
+                        }
+                    </div>
+                </div>
+
+
+
+            </div>
+            <div id="search-items">
+
+
+                @ClassArchive.GetHtml(companyDetails)
+
+                <div class="search-footer">
+                    @ButtonList.GetHtml(companyDetails, filteredClasses, button, itemsPerPage,
+     currentCategory, requiredDate, currentLocation)
+                    @*            @{
+                            var buttonCount = 1;
+                            count = 0;
+                            var strlink = Href(baseURL);
+                            foreach (var classItem in filteredClasses)
+                            {
+                                count++;
+                                if (count == 1 || count % itemsPerPage == 1)
+                                {
+                                    var aLink = strlink + "?page=" + buttonCount;
+                                    //var aLink = strlink + button;
+                                    if (buttonCount == button)
+                                    {
+                                        <text><div class="search-footer-item2" onclick="window.location='@aLink'">@buttonCount.ToString()</div></text>
+                                    }
+                                    else
+                                    {
+                                        <text><div class="search-footer-item" onclick="window.location='@aLink'">@buttonCount.ToString()</div></text>
+                                    }
+                                    buttonCount++;
+                                }
+                            }
+                        }*@
+                </div>
+
+                <div id="accordion">
+                    <div id="search-body" class="search-grid">
+                        @*search-singular*@
+                        @if (filteredClasses.Count() == 0)
+                        {
+                            <h3 style="padding: 40px;">No results found</h3>
+                        }
+                        else
+                        {
+                            //button = 1;
+                            count = 0;
+                            var maxCount = button * itemsPerPage;
+                            var minCount = maxCount - itemsPerPage;
+
+                            foreach (GroupClass classItem in classes)
+                            {
+                                count++;
+                                if (count > minCount && count <= maxCount && (currentCategory == "" || classItem.CategoryName == currentCategory))
+                                {
+                                    if ((count - 1) % 3 == 0)
+                                    {
+                                        <div class="clear-fix"></div>
+                                        if (count != 1 && (count - 1) % 6 == 0)
+                                        {
+                                            <text>
+                                                @Advertisements.HorizontalBar()
+                                                @Advertisements.MobileHorizontalBar()
+                                            </text>
+                                        }
+                                        else if (count != 0 && count % 3 == 0)
+                                        {
+                                            <text>
+                                                @Advertisements.MobileHorizontalBar()
+                                            </text>
+                                        }
+                                    }
+
+                                    if (classItem.IsAdvert)
+                                    {
+                                        var link = Href("~/Advert/" + classItem.CategoryName.Replace(" and ", "-") + "/" + classItem.ID);
+
+                                        <div class="search-item advert cat-@classItem.CategoryID" id="advert_@classItem.ID" itemscope itemtype="http://schema.org/Organization">
+                                            <div class="row">
+
+                                                <div class="search-item-image">
+                                                    @if (!String.IsNullOrEmpty(classItem.Image))
+                                                    {
+                                                        <div class="float-right search-item-image">
+                                                            <a href="@link"><img src="@Href(classItem.Image)" style="float:right; max-height:100%; max-width: 100%" alt="@classItem.Name - DuckRow.Net" /></a>
+                                                        </div>
+                                                    }
+                                                </div>
+
+                                                <div class="search-item-detail">
+                                                    <div class="event-wrapper">
+                                                        <!-- Entry title start -->
+                                                        <div class="entry-title">
+                                                            <div class="event-title">
+                                                                <h2 class="entry-title" itemprop="name"><a itemprop="url" href="@link" title="@classItem.Name" rel="bookmark">@classItem.Name</a></h2>
+                                                            </div>
+                                                            <!-- Entry title end -->
+                                                            <!-- Entry details start -->
+                                                            <div class="entry-details">
+                                                                <p class="address" itemprop="address">@classItem.Company, @classItem.State</p>
+                                                            </div>
+                                                            <!-- Entry details end -->
+                                                        </div>
+                                                        <!--Start Post Content -->
+                                                        <div itemprop="description" class="entry-summary">
+                                                            <p>
+                                                                @{
+                                                                    string desc = HttpUtility.HtmlDecode(classItem.Description + "");
+                                                                    desc = Regex.Replace(desc, @"<[^>]+>|&nbsp;", "").Trim();
+                                                                    desc = Regex.Replace(desc, @"\s{2,}", " ");
+                                                                    if (desc.Length > 129)
+                                                                    {
+                                                                        desc = desc.Substring(0, 125) + "...";
+                                                                    }
+                                                                    <text>@desc</text>
+                                                                }
+                                                            </p>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+
+
+
+
+                                            </div>
+                                        </div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        var link = "";
+                                                                        if (String.IsNullOrEmpty(classItem.Slug))
+                                                                        {
+                                                                            link = Href("~/Classes/" + classItem.Company + "/" + classItem.SubCategoryName.Replace(" ", "-") + "/" + classItem.ID);
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            link = Href(classItem.Slug);
+                                                                        }
+                                                                        //var link = Href("~/Classes/" + classItem.Company +  "/" + classItem.ID);
+                                                                        DateTime nextClass = @classItem.NextClass();
+
+                                                                        <div class="search-item cat-@classItem.CategoryID" id="@classItem.ID" itemscope itemtype="http://schema.org/Event">
+                                                                            <div class="row">
+
+                                                                                <div class="search-item-image">
+                                                                                    @if (!classItem.CheckIfSpacesExist() && classItem.ClassDates.Last() >= DateTime.Now)
+                                                                                    {
+                                                                                        <div style="position:absolute; margin:-10px;">
+                                                                                            <a href="@link"><img style="opacity:0.85;filter:alpha(opacity=85); /* For IE8 and earlier */ " alt="fully booked - DuckRow-Net" src="@Href("~/Images/fullybooked_small.png")" alt="" /></a>
+                                                                                        </div>
+                                                                                    }
+                                                                                    @if (!String.IsNullOrEmpty(classItem.Image))
+                                                                                    {
+                                                                                        if (company != classItem.Company)
+                                                                                        {
+                                                                                            if (!String.IsNullOrEmpty(classItem.CompanyImage))
+                                                                                            {
+                                                                                                <div class="search-item-logo">
+                                                                                                    <a href="@link"><img src="@Href(classItem.CompanyImage)" alt="@classItem.Name - DuckRow.Net" /></a>
+                                                                                                </div>
+                                                                                            }
+                                                                                            else
+                                                                                            {
+                                                                                                <div class="search-item-logo">
+                                                                                                    <a href="@link"><span class="small-title">@classItem.Company</span></a>
+                                                                                                </div>
+                                                                                            }
+                                                                                        }
+                                                                                        <a href="@link"><img src="@Href(classItem.Image)" style="" alt="@classItem.Name - DuckRow.Net" /></a>
+                                                                                    }
+                                                                                    else if (!String.IsNullOrEmpty(classItem.CompanyImage))
+                                                                                    {
+                                                                                        <div class="search-item-image">
+                                                                                            <a href="@link"><img src="@Href(classItem.CompanyImage)" style="" alt="@classItem.Name - DuckRow.Net" /></a>
+                                                                                        </div>
+                                                                                    }
+                                                                                    else if (company != classItem.Company)
+                                                                                    {
+                                                                                        <div class="search-item-image">
+                                                                                            <a href="@link"><span class="small-title">@classItem.Company</span></a>
+                                                                                        </div>
+                                                                                    }
+                                                                                </div>
+
+                                                                                <div class="search-item-detail">
+                                                                                    <div class="event-wrapper">
+                                                                                        <!-- Entry title start -->
+                                                                                        <div class="entry-title">
+                                                                                            <div class="event-title">
+                                                                                                <span class="date">@nextClass.ToString("dd")<span>@nextClass.ToString("MMM")</span></span>
+                                                                                                <h2 class="entry-title" itemprop="name"><a itemprop="url" href="@link" title="@classItem.Name" rel="bookmark">@classItem.Name</a></h2>
+                                                                                            </div>
+                                                                                            <!-- Entry title end -->
+                                                                                            <!-- Entry details start -->
+                                                                                            <div class="entry-details">
+                                                                                                <p class="address">@classItem.LocationName, @classItem.State</p><p class="event_date"><span><span itemprop="startDate" content="@nextClass.ToString("yyyy-MM-ddThh:mm")">@nextClass.ToString("dddd dd MMMM yyyy")</span> </span></p><p class="time"><span>@nextClass.ToString("h:mmtt", CultureInfo.InvariantCulture) - @nextClass.AddMinutes(classItem.Duration).ToString("h:mmtt", CultureInfo.InvariantCulture)</span></p>
+                                                                                                <div class="hidden" itemscope itemtype="http://schema.org/Place" itemprop="location">
+                                                                                                    <div itemprop="name">@classItem.LocationName</div>
+                                                                                                    <div itemprop="address">@classItem.LocationName, @classItem.Address1, @classItem.Address2, @classItem.City, @classItem.State</div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <!-- Entry details end -->
+                                                                                        </div>
+                                                                                        <!--Start Post Content -->
+                                                                                        <div itemprop="description" class="entry-summary">
+                                                                                            <p>
+                                                                                                @{ string desc = HttpUtility.HtmlDecode(classItem.Description);
+                                                                                                    desc = Regex.Replace(desc, @"<[^>]+>|&nbsp;", "").Trim();
+                                                                                                    desc = Regex.Replace(desc, @"\s{2,}", " ");
+                                                                                                    if (desc.Length > 129)
+                                                                                                    {
+                                                                                                        desc = desc.Substring(0, 125) + "...";
+                                                                                                    }
+                                                                                                    <text>@desc</text>
+                                                                                                }
+                                                                                            </p>
+                                                                                        </div>
+
+                                                                                        @Favourite.GetHtml(classItem)
+
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                @*<div class="search-item-footer"><a href="@Href("~/Classes/" + @classItem.ID)" target="_self">More details here...</a></div>*@
+                                                                            </div> @* END row *@
+                                                                        </div>
+                                                                                                    }@*END isAdvert check*@
+                                                                                                    } @*END count check *@
+                                                                                                    } @*End foreach *@
+                                                                                                    } @*End If *@
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div class="search-footer">
+                                                                                                @ButtonList.GetHtml(companyDetails, filteredClasses, button, itemsPerPage,
+                                    currentCategory, requiredDate, currentLocation)
+
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <div style="clear: both;text-align: center;"></div>
+
+}
+
+
+@helper getFeatureCode()
+{
+    <section class="featured">
+        <div id="featureSlide" class="content-wrapper">
+            <hgroup class="title">
+                @*<h1>Qwerty Time</h1><br />*@
+                <h1>The easy way to find classes and events online</h1>
+                @*<h2>@Facebook.LikeButton("http://www.duckrow.net/", showFaces: false, height: 25)</h2>*@
+                @*<p style="margin: 0px; color:#666">Your <a style="color:#FFE0A6;  font-style:italic;font-weight:bold;" href="@Href("~/Account/CreateAdvert")">first Advert is Free</a> and your first <a style="color:#FFE0A6; font-style:italic;font-weight:bold;" href="@Href("~/setup/register")">2 Months Subscription is Free!</a> </p>*@
+                <p style="margin-top: 15px; color:#666">Looking to list your classes online? <a style="color:#FFE0A6;  font-style:italic;font-weight:bold;" href="@Href("~/Setup/Register")">Register now for <i>free</i></a> to get started </p>
+            </hgroup>
+        </div>
+    </section>
+
+}

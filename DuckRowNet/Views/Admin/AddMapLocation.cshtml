@@ -1,0 +1,156 @@
+﻿@model DuckRowNet.Models.LocationModel
+@using DuckRowNet.Helpers;
+@{
+    ViewBag.Title = "Add Location";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    DAL db = new DAL();
+
+    List<SelectListItem> countyList = new List<SelectListItem>();
+    foreach (var county in @db.listCounties("IE"))
+    {
+        countyList.Add(new SelectListItem { Value = county.Name, Text = county.Name });
+    }
+    
+    Model.IncludeSearch = true;
+    Model.Country = "IE";
+
+    if (IsPost)
+    {
+        Model.IncludeSearch = false;
+    }
+    else
+    {
+        Model.Longitude = "-6.253044480255085";
+        Model.Latitude = "53.34854052286669";
+        Model.Zoom = "7";
+    }
+
+
+}
+
+<div class="main-view">
+
+    @if (!ViewBag.isValid)
+    {
+        Model.IncludeSearch = false;
+        <p class="message error">
+            @ViewBag.errorMessage
+        </p>
+        }
+    @if (ViewBag.successMessage != "")
+        {
+        <p class="message-success">
+            @ViewBag.successMessage
+        </p>
+    }
+
+@using (Html.BeginForm("AddLocation", "Admin", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+{
+    @Html.AntiForgeryToken()
+        <div class="form-main">
+
+
+            <div style="text-align:center;">
+                <h3>Add a Location</h3>
+            </div>
+
+            <br />
+            <div class="form-group" >
+                @Html.LabelFor(m => m.Name, new { @class = "col-md-4 control-label" })
+                <div class="col-md-8">
+                    @Html.TextBoxFor(m => m.Name, new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="form-group" >
+                @Html.LabelFor(m => m.Description, new { @class = "col-md-4 control-label" })
+                <div class="col-md-8">
+                    @Html.TextBoxFor(m => m.Description, new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="form-group">
+                @Html.LabelFor(m => m.Address1, new { @class = "col-md-4 control-label" })
+                <div class="col-md-8">
+                    @Html.TextBoxFor(m => m.Address1, new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="form-group">
+                @Html.LabelFor(m => m.Address2, new { @class = "col-md-4 control-label" })
+                <div class="col-md-8">
+                    @Html.TextBoxFor(m => m.Address2, new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="form-group">
+                @Html.LabelFor(m => m.City, new { @class = "col-md-4 control-label" })
+                <div class="col-md-8">
+                    @Html.TextBoxFor(m => m.City, new { @class = "form-control" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.State, "County", new { @class = "col-md-4 control-label" })
+                <div class="col-md-8">
+                    @Html.DropDownListFor(m => m.State, countyList, new { @class = "form-control" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Postcode, new { @class = "col-md-4 control-label" })
+                <div class="col-md-8">
+                    @Html.TextBoxFor(m => m.Postcode, new { @class = "form-control" })
+                </div>
+            </div>
+            <br />
+
+            <div id="fullAddress" data-id="@Model.Address1,@if (Model.Address2 != null)
+    { @Model.City; },@Model.State,@Model.Postcode" style="display:none;"></div>
+
+            <div class="row" id="addressSearchButton">
+                <span class="label text-hide">.</span>
+                <span class="formTextBox">
+                    <input type="button" class="button" onclick="FindAddress()" value="Search" />
+                </span>
+            </div>
+
+            <br />
+
+            <div class="map-search">
+                <div class="row" id="mapDiv">
+                    <p>Is this the correct location? Drag the map icon to the exact location and click the button to Create</p>
+                    @*<span class="label"></span>
+                <span class="formTextBox">
+                    <div id="map_canvas" style="width:600px; height:400px" title="Zoom in and find your location. Click on the map to select the location. Press 'Submit' when ready."></div>
+                </span>*@
+                    @GoogleMap.Map(latitude: Convert.ToDouble(Model.Latitude),
+                      longitude: Convert.ToDouble(Model.Longitude),
+                      width: "650px",
+                      height: "450px",
+                      draggablePOI: true
+                      )
+
+                </div>
+
+
+
+                <div class="row" id="createButton">
+                    <span class="label text-hide">.</span>
+                    <span class="formTextBox">
+                        <input type="submit" class="button" value="@ViewBag.task" />
+                    </span>
+                </div>
+            </div>
+
+        </div>
+
+        @Html.HiddenFor(m => m.Country) ;
+        @Html.HiddenFor(m => m.Longitude) ;
+        @Html.HiddenFor(m => m.Latitude) ;
+        @Html.HiddenFor(m => m.LocationID) ;
+        <input type="text" id="urlReferrer" name="urlReferrer" value="@ViewBag.urlReferrer" style="visibility:hidden;display:none;" />
+        <input type="text" id="task" name="task" value="@ViewBag.task" readonly="readonly" style="visibility:hidden;display:none;" />
+
+
+
+
+}
+</div>

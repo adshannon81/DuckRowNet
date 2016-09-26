@@ -1,0 +1,301 @@
+﻿/*
+*{
+    margin:0px;
+    padding:0px;
+}
+body{
+    color:#444444;
+    font-size:13px;
+    background: #f2f2f2;
+    font-family:"Century Gothic", Helvetica, sans-serif;
+}
+#content{
+    margin:15px auto;
+    text-align:center;
+    width:600px;
+    position:relative;
+    height:100%;
+}
+*/
+
+#multistep_wrapper
+{
+    border: 1px solid #C7D1D6;
+    /*-moz-box-shadow:0px 0px 3px #aaa;
+    -webkit-box-shadow:0px 0px 3px #aaa;
+    box-shadow:0px 0px 3px #aaa;
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    border-radius:10px;
+    border:2px solid #fff;*/
+    background-color:#EFEEEF;
+    width:725px;
+    overflow:hidden;
+    margin: -1px;
+}
+#steps{
+    width:725px;
+	/*height:320px;*/
+    overflow:hidden;
+    
+}
+.step{
+    float:left;
+    width:725px;
+	/*height:320px;*/
+	border:0;
+}
+#navigation, #navigation_bottom
+{
+    background-color:#E5E9EB;
+    border-bottom:1px solid #C7D1D6;
+    /*-moz-border-radius:0px 0px 10px 10px;
+    -webkit-border-bottom-left-radius:10px;
+    -webkit-border-bottom-right-radius:10px;
+    border-bottom-left-radius:10px;
+    border-bottom-right-radius:10px;*/
+}
+
+#navigation
+{
+    height:36px;
+    margin-bottom: 20px;
+}
+#navigation_bottom
+{
+    height:47px;
+    margin-bottom: -1px;
+}
+#navigation ul
+{
+    margin:0px;
+    padding:0px;
+    list-style:none;
+	float:left;
+	margin-left:22px;
+}
+#navigation_bottom ul
+{
+    margin:0px;
+    padding:0px;
+    list-style:none;
+	float:right;
+	margin-left:22px;
+}
+#navigation ul li
+{
+    /*font-size: 1.1em;*/
+	float:left;
+    /*border-right:1px solid #C7D1D6;*/
+    border-left:1px solid #C7D1D6;
+    position:relative;
+	margin:0px 2px;
+}
+#navigation ul li a{
+    display:block;
+    height:35px;
+    background-color:#EFEEEF ;
+    color:#245065;
+    outline:none;
+    font-weight:bold;
+    text-decoration:none;
+    line-height:35px;
+    padding: 0px 20px 0px 15px;
+    background-image: url('../Images/multistep_arrow2.png');
+    background-repeat: no-repeat;
+    background-position: right;
+    /*border-right:1px solid #fff;
+    border-left:1px solid #fff;
+    background:#f0f0f0;
+    background:
+        -webkit-gradient(
+        linear,
+        left bottom,
+        left top,
+        color-stop(0.09, rgb(240,240,240)),
+        color-stop(0.55, rgb(227,227,227)),
+        color-stop(0.78, rgb(240,240,240))
+        );
+    background:
+        -moz-linear-gradient(
+        center bottom,
+        rgb(240,240,240) 9%,
+        rgb(227,227,227) 55%,
+        rgb(240,240,240) 78%
+        )*/
+}
+#navigation ul li a:hover, 
+#navigation ul li.previous a
+{
+    background: #C7D1D6;
+    color: #245065;
+    background-image: url('../Images/multistep_arrow2.png');
+    background-repeat: no-repeat;
+    background-position: right;
+}
+#navigation ul li.selected a{
+    background:#FFE0A6;
+    color:#245065;
+    background-image: url('../Images/multistep_arrow2.png');
+    background-repeat: no-repeat;
+    background-position: right;
+    /*text-shadow:1px 1px 1px #fff;*/
+}
+#navigation_bottom ul li
+{
+	float:right;
+    position:relative;
+	margin:0px 2px;
+}
+#navigation_bottom ul li a{
+    display:block;
+    border:1px solid #C7D1D6;
+    margin: 10px 10px 10px 0px;
+    height:25px;
+    background-color:#EFEEEF ;
+    color:#245065;
+    outline:none;
+    font-weight:bold;
+    text-decoration:none;
+    line-height:25px;
+    padding: 0px 20px;
+}
+#navigation_bottom ul li a:hover{
+    background:#C7D1D6 ;
+    color:#245065;
+}
+span.checked{
+    background:transparent url(../Images/checked.png) no-repeat top left;
+    position:absolute;
+    top:0px;
+    left:1px;
+    width:20px;
+    height:20px;
+}
+span.error{
+    background:transparent url(../Images/error.png) no-repeat top left;
+    position:absolute;
+    top:0px;
+    left:1px;
+    width:20px;
+    height:20px;
+}
+#steps form fieldset
+{
+    border:none;
+    padding-bottom:20px;
+}
+#steps form legend
+{
+    display: block;
+    text-align:left;
+    background-color:#E5E9EB;
+    color:#8FA7B1;
+    font-size:18px;
+    /*text-shadow:1px 1px 1px #fff;*/
+    font-weight:bold;
+    float:left;
+    width:725px;
+    padding:10px 0px 10px 45px;
+    margin-bottom: 10px;
+    /*margin:10px 0px;*/
+    border-bottom:1px solid #d9d9d9;
+    /*border-top:1px solid #d9d9d9;*/
+}
+
+#steps form .form-group,
+#steps form p {
+    float:left;
+    clear:both;
+    margin:5px 0px;
+    color: #245065;
+    background-color:#f4f4f4;
+    border:1px solid #C7D1D6;
+    width:615px;
+    padding:10px;
+    margin-left:40px;
+    /*-moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    -moz-box-shadow:0px 0px 3px #aaa;
+    -webkit-box-shadow:0px 0px 3px #aaa;
+    box-shadow:0px 0px 3px #aaa;*/
+}
+#steps form p label
+{
+    font-size:1em;
+    padding: 8px 10px 0px 10px;
+    width:150px;
+    float:left;
+    text-align:right;
+    margin-right:15px;
+    line-height:26px;
+    color:#245065;
+    text-shadow:1px 1px 1px #fff;
+    font-weight:bold;
+}
+#steps form input:not([type=radio,type=checkbox]),
+#steps form textarea,
+#steps form select{
+    font-size:1em;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    outline: none;
+    padding: 5px;
+}
+#steps form input:not([type=radio,type=checkbox]),
+#steps form textarea
+{
+    width: 360px;
+    float:left;    
+}
+#steps form img,
+#steps form a
+{
+    padding: 8px 10px 0px 10px;
+}
+#steps form input:focus{
+    -moz-box-shadow:0px 0px 3px #aaa;
+    -webkit-box-shadow:0px 0px 3px #aaa;
+    box-shadow:0px 0px 3px #aaa;
+    background-color:#FFFEEF;
+}
+#steps form p.submit{
+    background:none;
+    border:none;
+    -moz-box-shadow:none;
+    -webkit-box-shadow:none;
+    box-shadow:none;
+}
+#steps form button 
+{
+    width: 250px;
+	border:solid 1px #C7D1D6;
+	outline:none;
+    /*-moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    border-radius: 10px;*/
+    color: #245065;
+    display: block;
+    cursor:pointer;
+    margin: 0px auto;
+    clear:both;
+    padding: 7px 25px;
+    /*text-shadow: 0 1px 1px #777;*/
+    font-weight:bold;
+    font-family:"Century Gothic", Helvetica, sans-serif;
+    font-size: 1.2em;
+    /*-moz-box-shadow:0px 0px 3px #aaa;
+    -webkit-box-shadow:0px 0px 3px #aaa;
+    box-shadow:0px 0px 3px #aaa;*/
+    background:#E5E9EB;
+}
+#steps form button:hover {
+    background:#C7D1D6;
+    border: solid 1px #FFE0A6;
+    /*color:#666;
+    text-shadow:1px 1px 1px #fff;*/
+}

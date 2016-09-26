@@ -1,0 +1,63 @@
+﻿@model DuckRowNet.Models.SetupRegisterViewModel
+@using reCAPTCHA.MVC;
+@{
+    ViewBag.Title = "Register";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    List<SelectListItem> subscriptionType = new List<SelectListItem>
+    {
+        new SelectListItem { Text="free", Value="4"}
+    };
+
+}
+
+<div class="container">
+    <h2>Register</h2>
+
+    @using (Html.BeginForm("Register", "Setup", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+    {
+        @Html.AntiForgeryToken()
+        <h4>Your company now...</h4>
+        <hr />
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Company, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.Company, new { @class = "form-control" })
+            </div>
+        </div>
+        <div class="form-group" style="display:none">
+            @Html.LabelFor(m => m.Subscription, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.DropDownList("Subscription", subscriptionType, new { @class = "form-control" })
+            </div>
+        </div>
+
+
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                @Html.Recaptcha()
+                @Html.ValidationMessage("ReCaptcha")
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input type="submit" class="btn btn-default" value="Register" />
+            </div>
+        </div>
+    }
+    <div class="col-md-offset-2 col-md-10">
+        <div class="error">@ViewBag.ErrorMessage</div>
+
+        @if (ViewBag.ClaimOwnership != "")
+        {
+            <div id="claim-ownership" data-id="@ViewBag.ClaimOwnership">Claim Ownership of @ViewBag.ClaimOwnership</div>
+        }
+    </div>
+
+
+    </div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

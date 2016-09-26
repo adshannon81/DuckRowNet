@@ -1,0 +1,53 @@
+﻿@using DuckRowNet.Helpers.Object;
+@helper GetHtml(CompanyDetails companyDetails, List<GroupClass> classList, int button, int itemsPerPage,
+    string currentCategory, string requiredDate, string currentLocation)
+{
+
+string baseURL = "~/";
+if (companyDetails.Name != "Qwerty Time")
+{
+    baseURL += "Classes/" + companyDetails.Name + "/";
+}
+//else
+//{
+//    company = "";
+//}
+
+int buttonCount = 1;
+int count = 0;
+string strlink = Href(baseURL);
+
+foreach (var classItem in classList)
+{
+    count++;
+    if (count == 1 || count % itemsPerPage == 1)
+    {
+        //var aLink = strlink + "?page=" + buttonCount;
+        var aLink = Href("/Page/" + buttonCount.ToString());
+        if (!String.IsNullOrEmpty(requiredDate))
+        {
+            aLink += "&date=" + requiredDate;
+        }
+        if (!String.IsNullOrEmpty(currentCategory))
+        {
+            aLink += "&cat=" + currentCategory;
+        }
+        if (!String.IsNullOrEmpty(currentLocation))
+        {
+            aLink += "&loc=" + currentLocation;
+        }
+
+        //var aLink = strlink + button;
+        if (buttonCount == button)
+        {
+                <text><div class="search-footer-item2"><a href="@aLink">@buttonCount.ToString()</a></div></text>
+        }
+        else
+        {
+                <text><div class="search-footer-item"><a href="@aLink">@buttonCount.ToString()</a></div></text>
+        }
+buttonCount++;
+    }
+}
+
+}

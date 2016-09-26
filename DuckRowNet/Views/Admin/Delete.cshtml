@@ -1,0 +1,52 @@
+﻿@model DuckRowNet.Helpers.Object.GroupClass
+@{
+    ViewBag.Title = "Delete";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div class="container" style="max-width:750px;">
+
+    @if (ViewBag.Result == "fail")
+    {
+        <h3>An Error has occurred. Please try again.</h3>
+        <p><a href="@ViewBag.ReturnURL">back to list</a></p>
+
+    }
+
+    else
+    {
+
+
+        <h3>THIS CLASS HAS BEEN DELETED.</h3>
+        <div id="classDetail">
+            @*    @{
+                var classItem = db.selectClassDetail(UrlData[0]);
+
+                string itemName = classItem.ElementAt(0).ID + "_" + classItem.ElementAt(0).Name;
+                string cost = classItem.ElementAt(0).CostPerPerson.ToString();
+
+                  }*@
+            <p><a href="@ViewBag.ReturnURL">back to list</a></p>
+
+            <label id="classID" style="visibility:hidden;">ID: @Model.ID.ToString()</label>
+            <fieldset>
+                <legend>Class Details</legend>
+                <ol>
+                    <li class="className">
+                        <h3>@Model.Name </h3>
+                    </li>
+                    <li class="classType">
+                        <label>@Model.CategoryName - @Model.SubCategoryName </label>
+                    </li>
+
+
+                </ol>
+
+            </fieldset>
+        </div>
+
+
+    }
+
+</div>

@@ -1,0 +1,69 @@
+﻿@using DuckRowNet.Helpers.Object;
+@{
+    ViewBag.Title = "Classes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewBag.FaceBookTags = "";
+    int page = ViewBag.Page;
+}
+
+@section scripts {
+
+
+    <script type="text/javascript">
+
+    $(document).ready(function () {
+
+        $('.flexslider').flexslider();
+
+        $("featureSlide").slideDown("slow");
+
+            $("#dialog").dialog({
+                modal: true,
+                resizable: false,
+                bgiframe: true,
+                width: 500,
+                height: 230,
+                autoOpen: false
+            });
+
+
+            $(".confirmLink").click(function (e) {
+                e.preventDefault();
+                var theHREF = $(this).attr("href");
+                $("#dialog").css('visibility', 'visible');
+                $("#dialog").css('display', 'none');
+
+                $("#dialog").dialog('option', 'buttons', {
+                    "Confirm": function () {
+                        window.location.href = theHREF;
+                    },
+                    "Cancel": function () {
+                        $(this).dialog("close");
+                    }
+                });
+                $("#dialog").dialog("open");
+            });
+        });
+    </script>
+
+}
+
+
+@{
+
+
+    ViewBag.MetaDescription = "Find classes in your local area, like Pilates, Yoga, Dance and more, with DuckRow.Net";
+    ViewBag.Title = "Find Classes - DuckRow.Net";
+
+        <text>
+
+            @ClassListing.getHTML(new CompanyDetails(), page )
+            @*@View.ClassInfiniteListing.getHTML(companyDetails)*@
+        </text>
+
+    }
+
+
+
+}

@@ -1,0 +1,17 @@
+﻿@{
+
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewBag.MetaDescription = ViewBag.Advert.Name + ", " + ViewBag.Advert.SubCategoryName + 
+		" @ " + ViewBag.Advert.Company + ", " + ViewBag.Advert.City + " - DuckRow.Net";
+    ViewBag.Title = ViewBag.Advert.SubCategoryName + " @ " + ViewBag.Advert.Company + " - DuckRow.Net";
+}
+
+
+<div class="container">
+
+    @AdvertDetail.getHTML(ViewBag.Advert, ViewBag.AdminUser)
+
+</div>
+
+

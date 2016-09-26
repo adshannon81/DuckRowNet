@@ -1,0 +1,478 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@model DuckRowNet.Models.SetupCompanyViewModel
+@{
+    ViewBag.Title = "Company";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    CompanyDetails companyDetails = ViewBag.CompanyDetails;
+
+    var companyOrClub = "Company";
+    if (companyDetails.IsClub)
+    {
+        companyOrClub = "Club";
+    }
+
+    if (String.IsNullOrEmpty(companyDetails.Country)){
+        companyDetails.Country = "IE";
+    }
+
+    DAL db = new DAL();
+
+
+}
+
+            @section css {
+<link type="text/css" href="../../Content/multistep_small.css" rel="stylesheet">
+<style>
+    .cke {
+                    visibility: hidden;
+                }
+</style>
+<link rel="stylesheet" type="text/css" href="../../ckeditor/skins/kama/editor.css?t=D6IE">
+}
+
+            @section scripts {
+
+<script type="text/javascript" src="../../Scripts/multistep.js"></script>
+<script type="text/javascript" src="../../ckeditor/ckeditor.js"></script>
+<script type="text/javascript" src="../../ckeditor/adapters/jquery.js"></script>
+<script type="text/javascript">
+	    $(function () {
+                    CKEDITOR.on('instanceCreated', function (e) {
+                        e.editor.on('change', function (ev) {
+                            var dataLength = ev.editor.getData()
+                                .replace(/<[^>]*>/g, '')
+                                .replace(/\s+/g, ' ')
+                                .replace(/&\w+;/g, 'X')
+		                .replace(/^\s*/g, '')
+                        .replace(/\s*$/g, '')
+                        .length;
+
+                            if (dataLength > 1000) {
+                                document.getElementById('charCount').innerHTML = 'character limit reached';
+                                ev.editor.execCommand('undo');
+                            }
+                            else {
+                                document.getElementById('charCount').innerHTML = (1000 - dataLength) + ' characters remanining';
+                            }
+                        });
+                    });
+
+                    var config = {
+                toolbar:
+                    [
+		            { name: 'basicstyles', items: ['Bold', 'Italic', 'Strike', '-', 'RemoveFormat'] },
+	            /*{ name: 'styles', items: ['Format', 'Font', 'FontSize'] },
+	            { name: 'colors', items: ['TextColor', 'BGColor'] },*/
+		            {name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-',
+                        'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock']
+        },
+		            { name: 'links', items: ['Link', 'Unlink'] }
+		        ],
+	            extraPlugins: 'onchange'
+	        };
+	        config.resize_maxWidth = 500;
+	        config.resize_maxHeight = 500;
+	        config.disableNativeSpellChecker = false;
+	        config.MaxLength = 1000;
+
+	        CKEDITOR.replace('Description', config);
+	        //$('#companyDescription').ckeditor(config);
+
+
+	    });
+
+</script>
+<script type="text/javascript" src="/Scripts/jquery.tools.min.js"></script>
+<script type="text/javascript">
+        $(document).ready(function () {
+            $(".popup img[title]").tooltip({
+            position: 'center right',
+                effect: 'slide',
+                offset: [25, -2]
+            });
+    });
+</script>
+<script type="text/javascript" src="../../ckeditor/config.js?t=D6IE"></script>
+<script type="text/javascript" src="../../ckeditor/lang/en.js?t=D6IE"></script>
+<script type="text/javascript" src="../../ckeditor/styles.js?t=D6IE"></script>
+}
+
+
+<div class="container">
+    <h2>Company Details</h2>
+    <hr/>
+    @if (!String.IsNullOrEmpty(ViewBag.Message))
+    {
+     <div class="success">@ViewBag.Message</div>
+    }
+
+    @using (Html.BeginForm("Company", "Setup", FormMethod.Post, new { @class = "form-horizontal", role = "form", enctype = "multipart/form-data" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Name, new { @class = "col-md-2 control-label" })
+            <div class="col-md-4">
+                @Html.TextBoxFor(m => m.Name, new { @class = "form-control", @Value = companyDetails.Name })
+            </div>
+            @Html.LabelFor(m => m.Phone, new { @class = "col-md-2 control-label" })
+            <div class="col-md-4">
+                <input value="@companyDetails.Phone" class="form-control" id="Phone" name="Phone" type="tel">
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.Email, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.Email, new { @class = "form-control", @Value = companyDetails.Email })
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.Logo, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                <script type="text/javascript">
+                            function readURL(input) {
+        if (input.files && input.files[0]) {
+                                    $('#loading').css('visibility', 'visible')
+                                    var reader = new FileReader();
+
+            reader.onload = function (e) {
+                                        $('#imagePreviewBox').css('visibility', 'hidden')
+                                        $('#imagePreviewBox').css('visibility', 'visible')
+                                        $('#imagePreview').attr('src', e.target.result);
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+                </script>
+                <input id="Logo" type="file" name="Image" allowNull="true" onchange="readURL(this);" accept="image/gif, image/jpeg, image/jpg, image/png" />
+                <span class="popup"><img src="../../Images/question.png" title="The Image must be less than 2Mb and a maximum height of 160px and maximum width of 400px" /></span>
+
+                @{
+                        var imageURL = Href("~/Images/CompanyImages/QT_small.png");
+                        if (!String.IsNullOrEmpty(companyDetails.ImagePath))
+                        {
+                            imageURL = Href(companyDetails.ImagePath);
+                        }
+                    }
+                <p id="loading" style="visibility:hidden;display:none;">
+                    <label for="loadingImage"></label>
+                    <img id="loadingImage" src="../../Images/ellipsis.gif" alt="Type Image" />
+                </p>
+                <p id="imagePreviewBox" @if (String.IsNullOrEmpty(companyDetails.ImagePath)) { <text> style="visibility:hidden;" </text>   }>
+                    <label for="imagePreview">Preview</label>
+                    <img id="imagePreview" style="max-height:200px; max-width:280px;" src="@imageURL" alt="Company Image" />
+                </p>
+            </div>
+
+            @*@{
+            var imageURL = "../../Images/CompanyImages/QT_small.png";
+            if (!String.IsNullOrEmpty(companyDetails.ImagePath))
+            {
+                imageURL = companyDetails.ImagePath;
+            }
+        }
+        <p id="loading" style="visibility:hidden;display:none;">
+            <label for="loadingImage"></label>
+            <img id="loadingImage" src="../../Images/ajax-loader.gif" alt="Type Image" />
+        </p>
+        <p id="imagePreviewBox" @if (String.IsNullOrEmpty(companyDetails.ImagePath)) { <text> style="visibility:hidden;" </text> }>
+            <label for="imagePreview">Preview</label>
+            <img id="imagePreview" style="max-height:200px; max-width:280px;" src="@imageURL" alt="Company Image" />
+        </p>*@
+
+
+
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.Description, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                <textarea name="Description" id="Description" allowNull="true" cols="40" rows="5" @if (companyDetails.Description == "Enter a short description of this company...") { <text> onfocus="this.value=''" </text>    }> @companyDetails.Description</textarea>
+                <span id="charCount" style="font-size:10px; text-align:right; float:right;margin-top:5px;">1000 characters remaining</span>
+            </div>
+        </div>
+        <hr />
+        <div class="form-group">
+            @Html.LabelFor(m => m.Address1, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.Address1, new { @class = "form-control", @Value = companyDetails.Address1 })
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.Address2, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.Address2, new { @class = "form-control", @Value = companyDetails.Address2 })
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.City, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.City, new { @class = "form-control", @Value = companyDetails.City })
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.County, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                <select name="County" class="longSelect" allowNull="true">
+                    <option value="">Select...</option>
+                    @foreach (var county in db.listCounties(companyDetails.Country))
+                {
+                        <option value="@county.Name" @{if (county.Name == companyDetails.State) { <text> selected="selected" </text>    ; }}>@county.Name</option>
+    }
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.Country, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                <select name="Country" class="longSelect">
+                    @foreach (var country1 in db.listCountries(false))
+                {
+                        <option value="@country1.IsoCode2" @{if (country1.IsoCode2 == companyDetails.Country) { <text> selected="selected" </text>   ; }}>@country1.Name</option>
+
+    }
+                </select>
+
+            </div>
+        </div>
+        <hr />
+        <div class="form-group">
+            @Html.LabelFor(m => m.Website, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                <input value="@companyDetails.URL" class="form-control" id="Website" name="Website" type="url">
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(m => m.Facebook, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                <input value="@companyDetails.FaceBookURL" class="form-control" id="Facebook" name="Facebook" type="url">
+            </div>
+        </div>
+        <hr />
+        <div class="form-group">
+            @Html.LabelFor(m => m.Paypal, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                <input value="@companyDetails.PaypalEmail" class="form-control" id="Paypal" name="Paypal" type="email">
+            </div>
+        </div>
+        <hr />
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input id="btnUpdate" type="submit" class="btn btn-default" value="Update" />
+                <img class="loading" alt="loading..." style="display:none; height:32px; width:32px; cursor:pointer; padding:0px; margin:0px auto;" src="~/Images/ajax-loader_small.gif" />
+
+            </div>
+        </div>
+    }
+
+</div>
+
+    <!--
+        <div id="multistep_wrapper">
+            <div id="navigation" style="display:none;">
+                <ul>
+                    <li class="selected">
+                        <a href="#">@companyOrClub</a>
+                    </li>
+                    <li>
+                        <a href="#">Description</a>
+                    </li>
+                    <li>
+                        <a href="#">Contact</a>
+                    </li>
+                    <li>
+                        <a href="#">Web</a>
+                    </li>
+                    <li>
+                        <a href="#">Payment</a>
+                    </li>
+                    <li>
+                        <a href="#">Confirm</a>
+                    </li>
+                </ul>
+            </div>
+            <div id="steps" style="width: 3000px;">
+                <form id="formElem" name="formElem" enctype="multipart/form-data" action="" method="post">
+                    <fieldset class="step">
+                        @*<legend>Company Basics</legend>*@
+                        <p>
+                            <label for="companyName">@companyOrClub Name</label>
+                            <input id="companyName" name="companyName" type="text" size="25" readonly="readonly" disabled="disabled" value="@companyDetails.Name" />
+                        </p>
+                        <p>
+
+                            <script type="text/javascript">
+                            function readURL(input) {
+                                if (input.files && input.files[0]) {
+                                    $('#loading').css('visibility', 'visible')
+                                    var reader = new FileReader();
+
+                                    reader.onload = function (e) {
+                                        $('#imagePreviewBox').css('visibility', 'hidden')
+                                        $('#imagePreviewBox').css('visibility', 'visible')
+                                        $('#imagePreview').attr('src', e.target.result);
+                                    }
+
+                                    reader.readAsDataURL(input.files[0]);
+                                }
+                            }
+                            </script>
+
+                            <label for="companyLogo">@companyOrClub Logo</label>
+                            <input id="companyLogo" type="file" name="Image" allowNull="true" onchange="readURL(this);" accept="image/gif, image/jpeg, image/jpg, image/png" />
+                            <span class="popup"><img src=""../../Images/question.png" title="The Image must be less than 2Mb and a maximum height of 160px and maximum width of 400px" /></span>
+                        </p>
+                        @*@{
+                            var imageURL = "../../Images/CompanyImages/QT_small.png";
+                            if (!String.IsNullOrEmpty(companyDetails.ImagePath))
+                            {
+                                imageURL = companyDetails.ImagePath;
+                            }
+                        }
+                        <p id="loading" style="visibility:hidden;display:none;">
+                            <label for="loadingImage"></label>
+                            <img id="loadingImage" src="../../Images/ajax-loader.gif" alt="Type Image" />
+                        </p>
+                        <p id="imagePreviewBox" @if (String.IsNullOrEmpty(companyDetails.ImagePath)) { <text> style="visibility:hidden;" </text> }>
+                            <label for="imagePreview">Preview</label>
+                            <img id="imagePreview" style="max-height:200px; max-width:280px;" src="@imageURL" alt="Company Image" />
+                        </p>*@
+
+
+
+                    </fieldset>
+                    <fieldset class="step">
+                        @*<legend>Description</legend>*@
+                        <p>
+                            <textarea name="companyDescription" id="companyDescription" allowNull="true" cols="40" rows="5" @if (companyDetails.Description == "Enter a short description of this company...") { <text> onfocus="this.value=''" </text> }> @companyDetails.Description</textarea>
+                            <span id="charCount" style="font-size:10px; text-align:right; float:right;margin-top:5px;">1000 characters remaining</span>
+                        </p>
+                    </fieldset>
+                    <fieldset class="step">
+                        @*<legend>Contact Information</legend>*@
+                        <p>
+                            <label for="companyPhone">@companyOrClub Phone</label>
+                            <input id="companyPhone" name="companyPhone" type="tel" size="25" allowNull="true" value="@companyDetails.Phone" />
+                        </p>
+                        <p>
+                            <label for="companyEmail">@companyOrClub Email</label>
+                            <input id="companyEmail" name="companyEmail" type="email" size="25" allowNull="true" value="@companyDetails.Email" />
+                        </p>
+                        <p>
+                            <label for="companyAddress1">@companyOrClub Address</label>
+                            <input id="companyAddress1" name="companyAddress1" type="text" size="25" allowNull="true" value="@companyDetails.Address1" />
+
+                            <label style="width:650px;clear:both;height:0px;"><br /> </label>
+                            <label for="companyAddress2"></label>
+                            <input id="companyAddress2" name="companyAddress2" type="text" size="25" allowNull="true" value="@companyDetails.Address2" />
+
+                            <label style="width:650px;clear:both;height:0px;"><br /> </label>
+                            <label for="companyCity">City</label>
+                            <input id="companyCity" name="companyCity" type="text" size="25" allowNull="true" value="@companyDetails.City" />
+
+                            <label style="width:650px;clear:both;height:0px;"><br /> </label>
+                            @if (companyDetails.Country == "IE")
+                            {
+                                <label for="companyState">County</label>
+                                <select name="companyState" class="longSelect" allowNull="true">
+                                    <option value="">Select...</option>
+                                    @foreach (var county in db.listCounties(companyDetails.Country))
+                                    {
+                                        <option value="@county.Name" @{if (county.Name == companyDetails.State) { <text> selected="selected" </text> ; }}>@county.Name</option>
+
+        }
+                                </select>
+        }
+        else
+        {
+            <label for="companyState">State</label>
+                                <input id="companyState" name="companyState" type="text" size="25" allowNull="true" value="@companyDetails.State" />
+        }
+                        </p>
+                        <p>
+                            <span @if (companyDetails.Country == "IE") { <text> style="display:none;" </text> }>
+                                <label for="companyPostcode">Postcode</label>
+                                <input id="companyPostcode" name="companyPostcode" type="text" size="25" allowNull="true" value="@companyDetails.Postcode" />
+                            </span>
+                            <label style="width:650px;clear:both;height:0px;"><br /> </label>
+                            <label for="companyPostcode">Country</label>
+                            <select name="country" class="longSelect">
+                                @foreach (var country1 in db.listCountries(false))
+                                {
+                                    <option value="@country1.IsoCode2" @{if (country1.IsoCode2 == companyDetails.Country) { <text> selected="selected" </text> ; }}>@country1.Name</option>
+
+        }
+                            </select>
+                        </p>
+                    </fieldset>
+                    <fieldset class="step">
+                        @*<legend>Web Presence</legend>*@
+                        <p>
+                            <label for="companyURL">Website URL</label>
+                            <input id="companyURL" name="companyURL" type="url" size="25" allowNull="true" value="@companyDetails.URL" />
+                            <span class="popup"><img src=""~/Images/question.png" title="If you have a website already then enter the address here. e.g. http://qwertytime.com" /></span>
+                        </p>
+                        <p>
+                            <label for="companyURL">FaceBook URL</label>
+                            <input id="companyFB" name="companyFB" type="url" size="25" allowNull="true" value="@companyDetails.FaceBookURL" />
+                            <span class="popup"><img src="~/Images/question.png" title="If you have a Facebook page then enter the address here." /></span>
+                        </p>
+                    </fieldset>
+                    <fieldset class="step">
+                        @* <legend>Payment Details</legend>*@
+                        <p>
+                            <label for="paypalEmail">Paypal Email</label>
+                            <input id="paypalEmail" name="paypalEmail" type="email" size="25" allowNull="true" value="@companyDetails.PaypalEmail" />
+                            <span class="popup"><img src="~/Images/question.png" title="Enter your PayPal email to receive payment automatically." /></span>
+                            <br /><span style="padding-left:180px;"><a class="noHighlightLink" href="http://www.paypal.com/" target="_blank" title="PayPal">create a PayPal account</a></span>
+                        </p>
+                        @*<p>
+                                <label for="paypalAbsorbFees">Absorb Paypal Fee</label>
+                                <select id="paypalAbsorbFees" name="paypalAbsorbFees" class="midSelect">
+                                    <option value="True" @{if (paypalAbsorbFees == "True")
+                                                           { <text>selected="selected"</text>;
+                                                           }} >Yes</option>
+                                    <option value="False" @{if (paypalAbsorbFees == "False")
+                                                            { <text>selected="selected"</text>;
+                                                            }} >No</option>
+                                </select>
+                                <span class="popup"><img src="@Href("~/Images/question.png")" title="Absorb paypal fees or pass them on to your clients. The fees are generally ~3.4% per transaction." /></span>
+                            </p>*@
+                    </fieldset>
+                    <fieldset class="step">
+                        @*<legend>Confirm</legend>*@
+                        <p>
+                            Everything in the form was correctly filled
+                            if all the steps have a green checkmark icon.
+                            A red checkmark icon indicates that some field
+                            is missing or filled out with invalid data. If you
+                            are happy to proceed then click the button below.
+                        </p>
+                        <p class="submit">
+
+                            <button id="btnUpdate2" type="submit" class="button" >Update Company</button>
+                            <img class="loading" alt="loading..." style="display:none; height:32px; width:32px; cursor:pointer; padding:0px; margin:0px auto;" src="~/Images/ajax-loader_small.gif" />
+                        </p>
+
+                        <input type="text" name="tab" style="visibility:hidden;display:none;" value="CompanyProfile" />
+
+                    </fieldset>
+
+                </form>
+            </div>
+            <div id="navigation_bottom" style="display:none;">
+                <ul>
+                    <li class="right">
+                        <a id="nextSlide" href="#">Next</a>
+                    </li>
+
+                </ul>
+            </div>
+
+
+
+        </div>
+
+    -->

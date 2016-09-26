@@ -1,0 +1,266 @@
+﻿@using DuckRowNet.Helpers;
+@using DuckRowNet.Helpers.Object;
+@model DuckRowNet.Helpers.Object.PersonDetails
+@helper getHTML(PersonDetails client, CompanyDetails companyDetails)
+{
+
+var urlReferrer = "";
+
+var isValid = true;
+var errorMessage = "";
+
+
+DAL db = new DAL(); 
+
+List<SelectListItem> countyList = new List<SelectListItem>();
+foreach (var county in @db.listCounties("IE"))
+{
+    countyList.Add(new SelectListItem { Value = county.Name, Text = county.Name });
+}
+
+if (IsPost)
+{
+
+    var buttonClick = Request["buttonClick"];
+
+    if (buttonClick == "Delete")
+    {
+        urlReferrer = Request.Form["urlReferrer"];
+        db.deleteClient(client.ID, companyDetails.Name);
+
+        //redirect back if success
+        if (!String.IsNullOrEmpty(urlReferrer))
+        {
+            Response.Redirect(urlReferrer, false);
+        }
+        else
+        {
+            Response.Redirect(Href("~/Admin/Clients/" + companyDetails.Name));
+        }
+
+    }
+    else
+    {
+        urlReferrer = Request.Form["urlReferrer"];
+
+        urlReferrer = Request.Form["urlReferrer"];
+
+        client.ID = Request.Form["clientID"];
+        client.Email = Request.Form["email"];
+        client.FirstName = Request.Form["firstName"];
+        client.LastName = Request.Form["lastName"];
+        client.Phone = Request.Form["phone"];
+        client.Address1 = Request.Form["address1"];
+        client.Address2 = Request.Form["address2"];
+        client.City = Request.Form["city"];
+        client.State = Request.Form["state"];
+        client.Country = Request.Form["country"];
+        client.Postcode = Request.Form["postcode"];
+
+        //check a name exists?
+
+
+        if (string.IsNullOrEmpty(client.FirstName) || string.IsNullOrEmpty(client.LastName))
+        {
+            errorMessage = "You must enter the name of your client";
+            isValid = false;
+        }
+
+        if (isValid)
+        {
+
+            if (db.UpdateClient(client, companyDetails.Name))
+            {
+                //redirect back if success
+                if (urlReferrer != "")
+                {
+                    Response.Redirect(urlReferrer, false);
+                }
+                else
+                {
+                    Response.Redirect(Href("~/Admin/Clients/" + companyDetails.Name));
+                }
+            }
+            else
+            {
+                isValid = false;
+                errorMessage = "An error occurred writing to the database. Please try again.";
+            }
+
+        }
+    }
+}
+else
+{
+    if (Request.UrlReferrer != null)
+    {
+        urlReferrer = Request.UrlReferrer.AbsolutePath.ToString();
+        if (!urlReferrer.EndsWith("/Clients"))
+        {
+            urlReferrer = urlReferrer + "/Clients";
+        }
+    }
+}
+
+
+//##################################### Page Start
+
+    @ToolBar.getHTML(urlReferrer)
+
+
+            <div class="agenda-view">
+                @{
+                    if (!isValid)
+                    {
+                        <p class="message error">
+                            @errorMessage
+                        </p>
+                    }
+
+                    var clientSessions = db.getClientSchedule(client, companyDetails.Name);
+
+                }
+
+                <form enctype="multipart/form-data" method="post" action="">
+
+                    <div class="section-head">Client Details</div>
+                    <div class="section-body">
+                        <div class="row">
+                            <span class="label">First Name </span>
+                            <span class="formTextbox">
+                                <input id="firstname" @if (client.Type == Functions.PersonType.User) { <text> readonly="readonly" </text>  } name="firstname" type="text" size="25" value="@client.FirstName" />
+                            </span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Last Name </span>
+                            <span class="formTextbox">
+                                <input id="lastname" @if (client.Type == Functions.PersonType.User) { <text> readonly="readonly" </text>  } name="lastname" type="text" size="25" value="@client.LastName" />
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Phone </span>
+                            <span class="formTextbox">
+                                <input id="phone" @if (client.Type == Functions.PersonType.User) { <text> readonly="readonly" </text>  } name="phone" type="text" size="25" value="@client.Phone" />
+                            </span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Email </span>
+                            <span class="formTextbox">
+                                <input id="email" @if (client.Type == Functions.PersonType.User) { <text> readonly="readonly" </text>  } name="email" type="text" size="25" value="@client.Email" />
+                            </span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Address </span>
+                            <span class="formTextbox">
+                                <input id="address1" @if (client.Type == Functions.PersonType.User) { <text> readonly="readonly" </text>  } name="address1" type="text" size="25" value="@client.Address1" />
+                            </span>
+                        </div>
+                        <div class="row">
+                            <span class="label"></span>
+                            <span class="formTextbox">
+                                <input id="address2" @if (client.Type == Functions.PersonType.User) { <text> readonly="readonly" </text>  } name="address2" type="text" size="25" value="@client.Address2" />
+                            </span>
+                        </div>
+                        <div class="row">
+                            <span class="label">City </span>
+                            <span class="formTextbox">
+                                <input id="city" @if (client.Type == Functions.PersonType.User) { <text> readonly="readonly" </text>  } name="city" type="text" size="25" value="@client.City" />
+                            </span>
+                        </div>
+                        <div class="row">
+
+                            <span class="label">County </span>
+                            <select name="state" class="longSelect" @if (client.Type == Functions.PersonType.User) { <text> disabled="disabled" </text>  }>
+                                <option value="" @{if (String.IsNullOrEmpty(client.State)) { <text> selected="selected" </text>  ; }}></option>
+                                @foreach (var county in @db.listCounties("IE"))
+                                {
+                                    <option value="@county.Name" @{if (county.Name == client.State) { <text> selected="selected" </text>  ; }}>@county.Name</option>
+    }
+                            </select>
+
+
+
+                            @* <span class="label">State </span>
+                                <span class="formTextbox"><input id="state" @if (clientType == "user")
+                                                                            {<text>readonly="readonly"</text>} name="state" type="text" size="25" value="@clientDetails.ElementAt(0).State"/></span>
+                            *@
+                        </div>
+                        <div class="row">
+                            <span class="label">Postcode </span>
+                            <span class="formTextbox">
+                                <input id="postcode" @if (client.Type == Functions.PersonType.User) { <text> readonly="readonly" </text>  } name="postcode" type="text" size="25" value="@client.Postcode" />
+                            </span>
+                        </div>
+
+                        <div class="row"> <br /></div>
+
+                        @if (client.Type != Functions.PersonType.User)
+                        {
+                            <div class="row">
+                                <span class="label"></span>
+                                <span class="formTextBox">
+                                    <input type="submit" class="button" id="udpateClient" name="buttonClick" value="Update" title="updateClient" />
+                                </span>
+                            </div>
+
+                            <div class="row"> <br /></div>
+
+                            <div class="row">
+                                <span class="label"></span>
+                                <span class="formTextBox">
+                                    <input type="submit" class="button" id="deleteClient" name="buttonClick" value="Delete" title="deleteClient" />
+                                </span>
+                            </div>
+
+                            <div class="row"> <br /></div>
+                        }
+
+                    </div>
+                    <input type="text" id="clientID" name="clientID" value="@client.ID" style="visibility:hidden;display:none;" />
+                    <input type="text" id="urlReferrer" name="urlReferrer" value="@urlReferrer" style="visibility:hidden;display:none;" />
+                </form>
+
+            </div>
+
+            <div class="section-head">Client Sessions</div>
+            <div class="row"> <br /></div>
+
+            if (clientSessions.Count() == 0)
+            {
+            <div>No Classes booked or reserved.</div>
+            }
+            else
+            {
+
+            <table class="table_SessionList">
+                <tr class="table_SessionList_Head">
+                    <td style="width:150px;">Start Date</td>
+                    <td style="width:150px;">Class Name</td>
+                    <td style="width:80px;">Sub-Category</td>
+                    <td style="width:80px;">Level</td>
+                    <td style="width:160px;">Location</td>
+                    <td style="width:40px;">Confirmed</td>
+                </tr>
+                @foreach (var session in clientSessions)
+                {
+                    var strLink = Href("~/Classes/" + session.ClassID.ToString());
+                    strLink = "parent.location = '" + strLink + "'";
+
+                    <tr class="table_SessionList_Row" onclick="@strLink" onmouseover="cursor='hand'">
+                        <td>@session.Date.ToString("dd MMM yy @ HH:mm")</td>
+                        <td>@session.ClassName</td>
+                        <td>@session.SubCategoryName</td>
+                        <td>@session.LevelName</td>
+                        <td>@session.Location</td>
+                        <td style="text-align:center;">
+                            @if (session.Confirmed)
+                            {<text><img src="@Href("~/Images/tick.png")" alt="confirmed" /></text>}
+                            else
+                            {<text><img src="@Href("~/Images/cross.png")" alt="confirmed" /></text>}
+                        </td>
+                    </tr>
+                }
+            </table>
+            }
+            }

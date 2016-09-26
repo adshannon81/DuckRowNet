@@ -1,0 +1,830 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@model DuckRowNet.Helpers.Object.GroupClass
+@{
+    ViewBag.Title = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    CompanyDetails companyDetails = ViewBag.CompanyDetails;
+    GroupClass gClass = ViewBag.GroupClass;
+    IEnumerable<dynamic> locations = ViewBag.Locations;
+    string[] adminIDList = ViewBag.AdminIDList;
+    IEnumerable<dynamic> admins = ViewBag.Admins;
+    IEnumerable<dynamic> categories = ViewBag.Categories;
+
+    //Validation
+    var isValid = ViewBag.isValid;
+    var nameErrorMessage = ViewBag.NameErrorMessage;
+    var dateErrorMessage = ViewBag.DateErrorMessage;
+    var locationErrorMessage = ViewBag.LocationErrorMessage;
+    var createErrorMessage = ViewBag.CreateErrorMessage;
+    var repeatErrorMessage = ViewBag.RepeatErrorMessage;
+
+}
+
+
+@section css {
+    <link type="text/css" href="~/Content/multistep_small.css" rel="stylesheet">
+    <style>
+        .cke {
+            visibility: hidden;
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="~/ckeditor/skins/kama/editor.css?t=D6IE">
+    <link type="text/css" href="~/Content/jquery.fancybox.css" rel="stylesheet" />
+}
+
+@section scripts {
+    <script type="text/javascript" src="~/Scripts/multistep.js"></script>
+    <script type="text/javascript" src="~/ckeditor/ckeditor.js"></script>
+    <script type="text/javascript" src="~/ckeditor/adapters/jquery.js"></script>
+    <script type="text/javascript">
+	    $(function () {
+	        CKEDITOR.on('instanceCreated', function (e) {
+	            e.editor.on('change', function (ev) {
+	                var dataLength = ev.editor.getData()
+		                .replace(/<[^>]*>/g, '')
+		                .replace(/\s+/g, ' ')
+		                .replace(/&\w+;/g, 'X')
+		                .replace(/^\s*/g, '')
+		                .replace(/\s*$/g, '')
+		                .length;
+
+	                if (dataLength > 1000) {
+	                    document.getElementById('charCount').innerHTML = 'character limit reached';
+	                    ev.editor.execCommand('undo');
+	                }
+	                else {
+	                    document.getElementById('charCount').innerHTML = (1000 - dataLength) + ' characters remanining';
+	                }
+	            });
+	        });
+
+	        var config = {
+	            toolbar:
+		            [
+		            { name: 'basicstyles', items: ['Bold', 'Italic', 'Strike', '-', 'RemoveFormat'] },
+	            /*{ name: 'styles', items: ['Format', 'Font', 'FontSize'] },
+	            { name: 'colors', items: ['TextColor', 'BGColor'] },*/
+		            {name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-',
+                        'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock']
+		        },
+		            { name: 'links', items: ['Link', 'Unlink'] }
+		        ],
+	            extraPlugins: 'onchange'
+	        };
+	        config.resize_maxWidth = 500;
+	        config.resize_maxHeight = 500;
+	        config.disableNativeSpellChecker = false;
+	        config.MaxLength = 1000;
+
+	        CKEDITOR.replace('classDescription', config);
+	        //$('#companyDescription').ckeditor(config);
+
+
+	    });
+
+    </script>>
+
+    <script type="text/javascript">
+        $.getJSON( window.location.protocol + '//'+ window.location.host + '/json/Menu/Category', null, function (data) {
+            var items = '';
+            $.each(data, function (i, item) {
+                items += '<option value=' + item.Value;
+                if(item.Value == '@gClass.CategoryID.ToString()') {
+                    items += ' selected="selected" ';
+                }
+                items += '>' + item.Text + '</option>';
+            });
+            $('#classCategory').html(items);
+            $("#classCategory").change(function () {
+                $("#classSubCategory").html("");
+                $("#classSubCategory").prop("disabled", true);
+                getSubCategories();
+                $("#classSubCategory").prop("disabled", false);
+            });
+
+            //$("#advertCategory").val($("#advertCategory option:first").val());
+            getSubCategories();
+        });
+
+        function getSubCategories() {
+                var Param = { CategoryID: $("#classCategory > option:selected").attr("value") };
+                $.getJSON(window.location.protocol + '//' + window.location.host + "/json/Menu/SubCategory/", Param, function (data) {
+                    var items = "";
+                    $.each(data, function (i, item) {
+                        items += '<option value=' + item.Value;
+                        if(item.Value == '@gClass.SubCategoryID.ToString()') {
+                            items += ' selected="selected" ';
+                        }
+                        items += '>' + item.Text + '</option>';
+                    });
+                    $("#classSubCategory").html(items);
+                });
+        }
+    </script>
+
+    <script>
+
+    $(document).ready(function () {
+
+        $(".popup img[title]").tooltip({
+            position: 'center right',
+            effect: 'slide',
+            offset: [25, -2]
+        });
+
+        $('#classStartDate').datepicker({
+            minDate: 0, dateFormat: 'yy-mm-dd',
+            onSelect: function (selectedDate) {
+                var d = new Date(selectedDate);
+                d.setDate(d.getDate() + 90);
+                $('#classEndDate').datepicker('option', 'minDate', selectedDate);
+                $('#classEndDate').datepicker('option', 'maxDate', d);
+            }
+        });
+
+        $('#classEndDate').datepicker({ maxDate: 90, dateFormat: 'yy-mm-dd' });
+
+
+        $("#cmdCreate").click(function () {
+            $(this).hide();
+            $(".loading").css("display", "block");
+        });
+
+
+        optionChange();
+        updateSummary();
+
+
+        $("select").change(function () {
+            updateSummary();
+        });
+        $("input").change(function () {
+            updateSummary();
+        });
+
+        $("#classRepeat").change(function () {
+            optionChange();
+        });
+
+
+        allowPayment();
+        paymentOptions();
+        allowReservation();
+
+        $("#classAllowPayment").change(function () {
+            allowPayment();
+        });
+
+        $("#classPrivate").change(function () {
+            paymentOptions();
+        });
+
+        $("#classAllowReservation").change(function () {
+            allowReservation();
+        });
+
+        $("#addAdminUser").click(function () {
+            var adminID = $("#adminUserList :selected").val();
+            var adminEmail = $("#adminUserList :selected").text();
+            if ($("#adminUsers").html().indexOf(adminID) == -1) {
+                $("#adminUsers").append($("<option selected=selected></option>")
+                .attr("value", adminID)
+                .text(adminEmail));
+
+                $("#" + adminID).show();
+            }
+        });
+
+        @if (gClass.IsCourse)
+        { <text>allowDropIn();</text>}
+
+            $("#allowDropIn").change(function () {
+                allowDropIn();
+            });
+
+    });
+
+
+        function readURL(input) {
+            if (input.files && input.files[0]) {
+                $('#loading').css('visibility', 'visible')
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    $('#imagePreviewBox').css('visibility', 'hidden')
+                    $('#imagePreviewBox').css('visibility', 'visible')
+                    $('#imagePreview').attr('src', e.target.result);
+                }
+
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+
+        function updateSummary() {
+
+            if ($("#classRepeat").val() == "Day") {
+                if ($("#repeatEvery").val() == "1") {
+
+                    $("#repeatSummary").text("Repeats daily");
+                }
+                else {
+                    $("#repeatSummary").text("Repeats every " +
+                        $("#repeatEvery").val() +
+                        " days");
+                }
+
+            } else if ($("#classRepeat").val() == "Week") {
+                var days = "";
+                if ($("#Monday").is(":checked")) {
+                    days = "Monday";
+                }
+                if ($("#Tuesday").is(":checked")) {
+                    if (days != "") { days += ", "; }
+                    days += "Tuesday";
+                }
+                if ($("#Wednesday").is(":checked")) {
+                    if (days != "") { days += ", "; }
+                    days += "Wednesday";
+                }
+                if ($("#Thursday").is(":checked")) {
+                    if (days != "") { days += ", "; }
+                    days += "Thursday";
+                }
+                if ($("#Friday").is(":checked")) {
+                    if (days != "") { days += ", "; }
+                    days += "Friday";
+                }
+                if ($("#Saturday").is(":checked")) {
+                    if (days != "") { days += ", "; }
+                    days += "Saturday";
+                }
+                if ($("#Sunday").is(":checked")) {
+                    if (days != "") { days += ", "; }
+                    days += "Sunday";
+                }
+                if (days == "") {
+                    checkDay((new Date()).getDay());
+                }
+
+                if ($("#repeatEvery").val() == 1) {
+                    $("#repeatSummary").text("Repeats every " +
+                        "week on " +
+                        days);
+                } else {
+
+                    $("#repeatSummary").text("Repeats every " +
+                        $("#repeatEvery").val() +
+                        " weeks on " +
+                        days);
+                }
+            }
+        };
+
+
+
+        function optionChange() {
+            //alert($("#classRepeat").val());
+            if ($("#classRepeat").val() == "never") {
+                $("#repeatOptions").hide("blind");
+                $("#weekOptions").hide("blind");
+
+            } else if ($("#classRepeat").val() == "Day") {
+                if ($("#repeatOptions").is(":hidden")) {
+                    $("#repeatOptions").show("blind");
+
+                }
+                $("#repeatEveryLabel").text("days");
+                $("#weekOptions").hide();
+
+            } else if ($("#classRepeat").val() == "Week") {
+                if ($("#repeatOptions").is(":hidden")) {
+                    checkDay(new Date($("#classStartDate").val()));
+                    $("#repeatOptions").show("blind");
+
+                }
+                $("#repeatEveryLabel").text("weeks");
+                $("#weekOptions").show();
+            }
+        };
+
+        function checkDay(aDate) {
+            $("#Monday").removeAttr('checked');
+            $("#Tuesday").removeAttr('checked');
+            $("#Wednesday").removeAttr('checked');
+            $("#Thursday").removeAttr('checked');
+            $("#Friday").removeAttr('checked');
+            $("#Saturday").removeAttr('checked');
+            $("#Sunday").removeAttr('checked');
+
+            days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][(aDate).getDay()];
+            $("#" + days).attr("checked", "checked");
+        };
+
+
+
+        function allowReservation() {
+            if ($("#classAllowReservation").val() == "no") {
+                $("#autoReservationDIV").hide("blind", { direction: "vertical" }, 200);
+            }
+            else {
+                $("#autoReservationDIV").show("blind", { direction: "vertical" }, 200);
+            }
+
+        };
+
+        function allowPayment() {
+            if ($("#classAllowPayment").val() == "no") {
+                $("#absorbFeeDIV").hide("blind", { direction: "vertical" }, 200);
+            }
+            else {
+                $("#absorbFeeDIV").show("blind", { direction: "vertical" }, 200);
+            }
+        };
+
+        function paymentOptions() {
+            if ($("#classPrivate").val() == "yes") {
+                $("#paymentOptionsDIV").hide();
+            }
+            else {
+                $("#paymentOptionsDIV").show();
+            }
+        };
+
+
+
+        function removeInstructor(adminID) {
+            //alert(adminID);
+            if ($("#adminUsers option").size() > 1) {
+                $("#" + adminID).hide();
+                $("#adminUsers option[value='" + adminID + "']").remove();
+            }
+        }
+
+
+
+        function allowDropIn() {
+            if ($("#allowDropIn").val() == "no") {
+                $("#dropInDIV").hide();
+            }
+            else {
+                $("#dropInDIV").show();
+            }
+        };
+
+    </script>
+}
+
+
+<div class="container" style="max-width:750px;">
+
+    @if (!isValid)
+    {
+        <p class="message error">
+            @if (String.IsNullOrEmpty(createErrorMessage))
+            {
+                @:Please correct the errors and try again.
+    }
+            else
+            {
+                @createErrorMessage
+            }
+        </p>
+    }
+
+    @if (gClass.IsCourse)
+    {
+        <h2 style="margin-bottom:10px;">Edit Course</h2>
+    }
+    else
+    {
+        <h2 style="margin-bottom:10px;">Edit Class</h2>
+    }
+
+    <div id="multistep_wrapper">
+        <div id="navigation" style="display:none;">
+            <ul>
+                <li class="selected">
+                    <a href="#">Basic Details</a>
+                </li>
+                <li>
+                    <a href="#">Description</a>
+                </li>
+                <li>
+                    <a href="#">Dates and Times</a>
+                </li>
+                <li>
+                    <a href="#">Attendance</a>
+                </li>
+                <li>
+                    <a href="#">Confirm</a>
+                </li>
+            </ul>
+        </div>
+        <div id="steps" style="width: 3000px;">
+            <form id="formElem" name="formElem" enctype="multipart/form-data" action="" method="post">
+                @Html.AntiForgeryToken()
+                <fieldset class="step">
+                    @*<legend>Basic Details</legend>*@
+                    <p>
+                        <label for="className">Name</label>
+                        <input type="text" id="className" name="className" title="Class Name" value="@gClass.Name" @if (!String.IsNullOrEmpty(nameErrorMessage)) { <text> class="error-field" </text>  } />
+                    </p>
+                    <p>
+                        <label for="classCategory">Category</label>
+                        <select id="classCategory" name="classCategory" class="longSelect"></select>
+                        @*<a class="modalbox" href="#inline">add a sub-category</a>*@
+
+                        <label style="width:650px;clear:both;height:0px;margin-top:-8px;"><br /> </label>
+
+                        <label for="classSubCategory">Sub-Category</label>
+                        <select id="classSubCategory" name="classSubCategory" class="longSelect"></select>
+                        @*</p>
+                            <p>*@
+                        @*                <br />
+                            <label style="width:650px;clear:both;height:10px;"><br /> </label>
+                                <label for="classLevel">Level</label>
+                                <select id="classLevel" name="classLevel" class="longSelect">
+                                    @foreach (var cLevel in @db.getClassLevels())
+                                    {
+                                        <option value="@cLevel.ID" @{if (cLevel.ID.ToString() == gClass.LevelID)
+                                                                     { <text>selected="selected"</text>;
+                                                                     }} >@cLevel.Name</option>
+                                    }
+                                </select>  *@
+                    </p>
+                    <p>
+
+                        <label for="file">Class Image</label>
+                        <input allowNull="true" type="file" title="this is the image that will appear with this class" name="classImage" onchange="readURL(this);" accept="image/gif, image/jpeg, image/jpg, image/png" />
+                        <span class="popup"><img alt="?" src="@Href("~/Images/question.png")" title="The Image must be less than 1Mb and we recommend a maximum height of 150px and maximum width of 280px" /></span>
+                        <input allowNull="true" type="text" id="ImageName" name="ImageName" style="visibility:hidden;display:none;" value="@gClass.Image" />
+
+                    </p>
+                    @{
+                        var imageURL = Href("~/Images/CompanyImages/QT_small.png");
+                        if (!gClass.Image.IsEmpty())
+                        {
+                            imageURL = Href(gClass.Image);
+                        }
+                    }
+                    <p id="loading" style="display:none;">
+                        <label for="loadingImage"></label>
+                        <img id="loadingImage" src="@Href("~/Images/ajax-loader_small.gif")" alt="Type Image" />
+                    </p>
+                    <p id="imagePreviewBox" @if (gClass.Image.IsEmpty()) { <text> style="display:none;" </text>  }>
+                        <label for="classImageView">Preview</label>
+                        <img id="classImageView" style="max-height:150px; max-width:280px;" src="@imageURL" alt="Type Image" />
+                    </p>
+
+
+
+                </fieldset>
+                <fieldset class="step">
+                    @*<legend>Description</legend>*@
+                    <p>
+                        @*<label for="classDescription">Description</label>
+                        *@<textarea allowNull="true" name="classDescription" id="classDescription" cols="40" rows="5" @if (gClass.Description == "Enter a Description...") { <text> onFocus="this.value=''; this.onfocus=null;" </text>  }> @gClass.Description</textarea>
+                        <span id="charCount" style="font-size:10px; text-align:right; float:right;margin-top:5px;">1000 characters remaining</span>
+                    </p>
+                </fieldset>
+                <fieldset class="step">
+                    @*<legend>Dates and Times</legend>*@
+                    <p>
+                        <label for="classStartDate">Start Date</label>
+                        <input type="text" id="classStartDate" name="classStartDate" title="Start Date" value="@gClass.StartDate.ToString("yyyy-MM-dd")" />
+
+                        <br />
+                        <label style="width:650px;clear:both;height:10px;"><br /> </label>
+
+                        <label for="hourStart">Start Time</label>
+                        <span class="float-left">
+                            <select name="hourStart" id="hourStart" class="shortSelect">
+                                @for (int i = 0; i <= 23; i++)
+                                {
+                                    <option value="@i" @{if (i == gClass.StartDate.Hour) { <text> selected="selected" </text>  ; }}>@i.ToString("00")</option>
+    }
+                            </select>:
+                            <select name="minuteStart" id="minuteStart" class="shortSelect">
+                                @for (int i = 0; i <= 59; i++)
+                                {
+                                    <option value="@i" @{if (i == gClass.StartDate.Minute) { <text> selected="selected" </text>  ; }}>@i.ToString("00")</option>
+    }
+                            </select>
+                        </span>
+
+
+                        <br />
+                        <label style="width:650px;clear:both;height:10px;"><br /> </label>
+
+                        <label for="classDuration">Duration</label>
+                        <span class="float-left">
+                            <select name="classDuration" class="midSelect">
+                                @for (int i = 5; i <= 720; i = i + 5)
+                                {
+                                    <option value="@i" @{if (i == Convert.ToInt16(gClass.Duration)) { <text> selected="selected" </text>  ; }}>@i</option>
+    }
+                            </select> minutes
+                        </span>
+
+                        <br />
+                        <label style="width:650px;clear:both;height:10px;"><br /> </label>
+
+                        <label for="classRepeat">Repeats?</label>
+                        <span class="float-left">
+                            <select id="classRepeat" name="classRepeat" class="longSelect">
+                                <option value="never" @{if (gClass.Repeated == Functions.Repeat.never) { <text> selected="selected" </text>  ; }}>Never</option>
+                                <option value="Day" @{if (gClass.Repeated == Functions.Repeat.Day) { <text> selected="selected" </text>  ; }}>Daily</option>
+                                <option value="Week" @{if (gClass.Repeated == Functions.Repeat.Week) { <text> selected="selected" </text>  ; }}>Weekly</option>
+                                @*<option value="Month" @{if(gClass.Repeated == qt.Repeat.Month){<text>selected="selected"</text>;
+                                    }}>Monthly</option>*@
+                            </select>
+                        </span>
+
+                    </p>
+
+                    <p id="repeatOptions">
+                        <label for="repeatEvery">Repeat Every</label>
+                        <span class="float-left">
+                            <select name="repeatEvery" id="repeatEvery" class="shortSelect">
+                                @for (int i = 1; i <= 30; i++)
+                                {
+                                    <option value="@i" @{if (i == Convert.ToInt16(gClass.RepeatFrequency)) { <text> selected="selected" </text>  ; }}>@i.ToString("00")</option>
+    }
+                            </select> <span id="repeatEveryLabel"></span>
+                        </span>
+
+                        <span id="weekOptions">
+                            <br />
+                            <label style="width:650px;clear:both;height:10px;"><br /> </label>
+
+                            <label>Repeat On</label>
+                            <span class="float-left" style="line-height:40px;">
+                                <input type="checkbox" id="Monday" name="Monday" value="Monday" @{if (gClass.RepeatDays.Contains("Monday") || gClass.StartDate.DayOfWeek.ToString() == "Monday") { <text> checked="checked" </text>  } } />M
+                                <input type="checkbox" id="Tuesday" name="Tuesday" value="Tuesday" @{if (gClass.RepeatDays.Contains("Tuesday") || gClass.StartDate.DayOfWeek.ToString() == "Tuesday") { <text> checked="checked" </text>  } }>T
+                                <input type="checkbox" id="Wednesday" name="Wednesday" value="Wednesday" @{if (gClass.RepeatDays.Contains("Wednesday") || gClass.StartDate.DayOfWeek.ToString() == "Wednesday") { <text> checked="checked" </text>  } }>W
+                                <input type="checkbox" id="Thursday" name="Thursday" value="Thursday" @{if (gClass.RepeatDays.Contains("Thursday") || gClass.StartDate.DayOfWeek.ToString() == "Thursday") { <text> checked="checked" </text>  } }>T
+                                <input type="checkbox" id="Friday" name="Friday" value="Friday" @{if (gClass.RepeatDays.Contains("Friday") || gClass.StartDate.DayOfWeek.ToString() == "Friday") { <text> checked="checked" </text>  } }>F
+                                <input type="checkbox" id="Saturday" name="Saturday" value="Saturday" @{if (gClass.RepeatDays.Contains("Saturday") || gClass.StartDate.DayOfWeek.ToString() == "Saturday") { <text> checked="checked" </text>  } }>S
+                                <input type="checkbox" id="Sunday" name="Sunday" value="Sunday" @{if (gClass.RepeatDays.Contains("Sunday") || gClass.StartDate.DayOfWeek.ToString() == "Sunday") { <text> checked="checked" </text>  } }>S
+                            </span>
+
+                        </span>
+
+
+                        <br />
+                        <label style="width:650px;clear:both;height:10px;"><br /> </label>
+
+                        @if (gClass.IsCourse)
+                        {
+                            <label for="numberOfLessons">Ends After</label>
+                            <span class="float-left">
+                                <select id="numberOfLessons" name="numberOfLessons" class="shortSelect">
+                                    @for (int i = 2; i <= 99; i++)
+                                    {
+                                        <option value="@i" @{if (i == Convert.ToInt16(gClass.NumberOfLessons))
+                                            { <text> selected="selected" </text>  ;
+                                            }}>@i</option>
+                                            }
+                                </select> classes
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="float-left">
+                                <label for="classEndDate">End Date</label>
+                                <input type="text" id="classEndDate" name="classEndDate" title="End Date" value="@gClass.EndDate.ToString("yyyy-MM-dd")" />
+                            </span>
+                        }
+                        <br />
+                        <label style="width:650px;clear:both;height:10px;"><br /> </label>
+                        <label for="repeatSummary">Summary</label>
+                        <span id="repeatSummary" class="float-left" style="line-height:40px;">test1</span>
+
+                    </p>
+                </fieldset>
+
+                <fieldset class="step">
+                    @*<legend>Attendance</legend>*@
+                    <p>
+                        <label for="classLocation">Location</label>
+                        <select name="classLocation" class="longSelect">
+                            @foreach (var location in locations)
+                            {
+                                <option value="@location.ID" @if (gClass.LocationID == location.ID)
+                                {<text>selected="selected"</text>} >@location.Name</option>
+                            }
+                        </select>
+                        <span id="addLocation" style="cursor:pointer;">add a new location</span>
+                    </p>
+                    <p>
+                        <label for="classMaxCapacity">Maximum Capacity</label>
+                        <select name="classMaxCapacity" class="midSelect">
+                            @for (int i = 1; i <= 30; i++)
+                            {
+                                <option value="@i" @{if (i == gClass.MaxCapacity) { <text> selected="selected" </text>   }}>@i</option>
+    }
+                        </select> people<br />
+
+
+
+                        @if (gClass.IsCourse)
+                        {
+
+
+                            <br />
+                            <label style="width:650px;clear:both;height:10px;"> </label>
+                            <label for="classCostOfCourse">Cost for Course</label>
+                            <span class="float-left" style="line-height:40px">
+                                <select name="classCostOfCourse" class="midSelect" style="float:left;">
+                                    @for (int i = 5; i <= 999; i++)
+                                    {
+                                        <option value="@i" @{if (i == gClass.CostOfCourse) { <text> selected="selected" </text>   }}>@i</option>
+    }
+                                </select> euro <br />
+                            </span>
+
+                            <br />
+                            <label style="width:650px;clear:both;height:10px;"></label>
+                            <label for="allowDropIn">Allow Drop-In?</label>
+                            <span class="float-left" style="line-height:40px">
+                                <select id="allowDropIn" name="allowDropIn" class="longSelect">
+                                    <option value="no" @{if (!gClass.AllowDropIn) { <text> selected="selected" </text>   }}>No, clients must book the entire course</option>
+                                    <option value="yes" @{if (gClass.AllowDropIn) { <text> selected="selected" </text>   }}>Yes, clients can book a single class</option>
+                                </select>
+                            </span>
+
+
+    }
+                        <span id="dropInDIV">
+                            <br />
+                            <label style="width:650px;clear:both;height:10px;"> </label>
+
+                            <label for="classCostOfSession">Cost for Single Class</label>
+                            <span class="float-left" style="line-height:40px">
+                                <select name="classCostOfSession" class="midSelect" style="float:left;">
+                                    @for (int i = 5; i <= 999; i++)
+                                    {
+                                        <option value="@i" @{if (i == gClass.CostOfSession) { <text> selected="selected" </text>   }}>@i</option>
+    }
+                                </select> euro <br />
+                            </span>
+                        </span>
+                    </p>
+
+                </fieldset>
+
+                <fieldset class="step">
+                    @*<legend>Confirm</legend>*@
+                    <p>
+                        <label for="classPrivate" class="hide">Private Class</label>
+                        <select id="classPrivate" name="classPrivate" class="midSelect hide">
+                            <option value="no" @{if (!gClass.IsPrivate) { <text> selected="selected" </text>  }}>No</option>
+                            <option value="yes" @{if (gClass.IsPrivate) { <text> selected="selected" </text>  }}>Yes</option>
+                        </select>
+                        <span id="paymentOptionsDIV">
+                            <br />
+                            <label style="width:650px;clear:both;height:0px;"><br /> </label>
+
+                            <label for="classAllowReservation">Allow Reservation</label>
+                            <select id="classAllowReservation" name="classAllowReservation" class="midSelect">
+                                <option value="no" @{if (!gClass.AllowReservation) { <text> selected="selected" </text>  ; }}>No</option>
+                                <option value="yes" @{if (gClass.AllowReservation) { <text> selected="selected" </text>  ; }}>Yes</option>
+                            </select>
+                            <span class="popup"><img src="@Href("~/Images/question.png")" title="Allow users request a reservation." /></span>
+
+                            <br />
+                            <label style="width:650px;clear:both;height:0px;"> </label>
+
+                            <span id="autoReservationDIV">
+                                <label for="classAutoReservation">Auto Reservation?</label>
+                                <select name="classAutoReservation" class="midSelect">
+                                    <option value="no" @{if (!gClass.AutoReservation) { <text> selected="selected" </text>  ; }}>No</option>
+                                    <option value="yes" @{if (gClass.AutoReservation) { <text> selected="selected" </text>  ; }}>Yes</option>
+                                </select>
+                                <span class="popup"><img src="@Href("~/Images/question.png")" title="Users will be able to reserve places on your class without you confirming." /></span>
+                                <br />
+                                <label style="width:650px;clear:both;height:0px;"> </label>
+                            </span>
+
+                            <label for="classAllowPayment" class="hide">Allow Payment</label>
+                            <select id="classAllowPayment" name="classAllowPayment" class="midSelect hide">
+                                <option value="no" @{if (!gClass.AllowPayment) { <text> selected="selected" </text>  ; }}>No</option>
+                                <option value="yes" @{if (gClass.AllowPayment) { <text> selected="selected" </text>  ; }}>Yes</option>
+                            </select>
+                            <span class="popup hide"><img src="@Href("~/Images/question.png")" title="Allow users pay online. Only possible if you have entered your PayPal details." /></span>
+
+                            <br />
+                            <label style="width:650px;clear:both;height:0px;"> </label>
+                            <span id="absorbFeeDIV">
+
+                                <label for="classAbsorbFee">Absorb Fee</label>
+                                <select id="classAbsorbFee" name="classAbsorbFee" class="midSelect">
+                                    <option value="no" @{if (!gClass.AbsorbFee) { <text> selected="selected" </text>  ; }}>No</option>
+                                    <option value="yes" @{if (gClass.AbsorbFee) { <text> selected="selected" </text>  ; }}>Yes</option>
+                                </select>
+                                <span class="popup"><img src="@Href("~/Images/question.png")" title="Absorb any online transaction fees." /></span>
+                            </span>
+                        </span>
+                    </p>
+                    <p class="hide" @if (companyDetails.SubType.MaxUsers <= 1) { <text> style="display:none;" </text>   }>
+
+                        <label for="classLocation">Instructor</label>
+                        <select id="adminUserList" name="adminUserList" class="longSelect">
+                            @foreach (var admin in admins)
+                            {
+                                <text>
+                                    <option value="@admin.UserId">@admin.Email</option></text>
+                            }
+                        </select>
+                        <img id="addAdminUser" style="height: 28px;width: 28px;cursor: pointer;padding: 0px 6px 6px 2px;vertical-align: middle;" src="@Href("~/Images/add_small.png")" />
+                        <br />
+                        <span id="adminDIV">
+                            @foreach (var admin in admins)
+                            {
+                                <text><span id="@admin.UserId.ToString()" @if (adminIDList.Contains((string)admin.UserId.ToString())) { <text> style="margin-left:200px;" </text>  } else { <text> style="display:none; margin-left:200px;" </text>  }>@admin.Email<img src="@Href("~/Images/cross.png")" alt="@admin.UserId.ToString()" class="deleteButton" title="Remove this instructor?" onclick="removeInstructor(@admin.UserId.ToString())" /><br /></span></text>
+                            }
+                        </span>
+                        <select id="adminUsers" name="adminUsers" class="longSelect" style="display:none; margin:0 0 0 186px;" multiple size=5>
+                            @foreach (var admin in adminIDList)
+                            {
+                                if (!admin.IsEmpty())
+                                {
+                                    <text>
+                                        <option value="@admin" selected="selected">@admin</option></text>
+                                }
+                            }
+                        </select>
+                    </p>
+                    <p class="submit">
+                        <button type="submit" class="button" id="cmdCreate">Update This Class</button>
+                        <img class="loading" style="display:none; height:32px; width:32px; cursor:pointer; padding:5px; margin: 0px auto;" src="@Href("~/Images/ajax-loader_small.gif")" />
+                    </p>
+                    <input type="text" id="validateForm" name="validateForm" style="visibility:hidden; " value="True" />
+                </fieldset>
+            </form>
+        </div>
+        <div id="navigation_bottom" style="display:none;">
+            <ul>
+                <li class="right">
+                    <a id="nextSlide" href="#">Next</a>
+                </li>
+
+            </ul>
+        </div>
+        <div id="inline" style="display:none; width:300px;  ">
+            <div id="classTypeContainer">
+                <form id="classTypeForm" action="#" method="post" name="classTypeForm">
+                    <div style="text-align:center;">
+                        <h3>Add A Sub-Category</h3>
+                    </div>
+
+                    <br />
+                    <label for="classCategoryID">Category</label>
+                    <select id="classCategoryID" name="classCategoryID" class="longSelect">
+                        @foreach (var cType in categories)
+                        {
+                            if (cType.Name != "Appointment")
+                            {
+                                <option value="@cType.ID" @{if (cType.ID.ToString() == gClass.CategoryID) { <text> selected="selected" </text>  ; }}>@cType.Name</option>
+        }
+    }
+                    </select>
+
+                    <label style="width:650px;clear:both;height:0px;"> </label>
+
+                    <span class="label">Sub-Category Name</span>
+                    <span class="formTextBox">
+                        <input type="text" id="classSubCategoryName" name="classSubCategoryName" title="This is the name that will appear as a sub-category." value="" />
+                    </span>
+                    <span class="label"></span>
+                    <span class="formTextBox">
+                        <input id="send" type="submit" class="button" value="Create" />
+                        <em id="sending" style=" display:none;">sending...</em>
+                        <input type="text" id="company" style="visibility:hidden; display:none;" name="company" value="@companyDetails.Name" />
+
+                    </span>
+                </form>
+            </div>
+            <div id="classTypeFail" style="display:none;">
+                <h3>An error occurred. <br />Please try again later.</h3>
+            </div>
+            <div id="classTypeSuccess" style="display:none;">
+                <h3>Your new class type has been added!</h3>
+            </div>
+        </div>
+        <div id="navigation_bottom" style="display:none;">
+            <ul>
+                <li class="right">
+                    <a id="nextSlide" href="#">Next</a>
+                </li>
+
+            </ul>
+        </div>
+
+
+    </div>
+
+</div>

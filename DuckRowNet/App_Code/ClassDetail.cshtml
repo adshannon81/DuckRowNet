@@ -1,0 +1,447 @@
+﻿@using System.Globalization;
+@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@using System.Text.RegularExpressions;
+@helper getHTML(GroupClass classItem, CompanyDetails companyDetails, String title, String description)
+{
+DAL db = new DAL();
+string returnURL = "";
+bool ThankYou = false;
+var hostUrl = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
+var pageURL = hostUrl + "/Classes/" + classItem.ID;
+
+var phoneDigits = "";
+if (!String.IsNullOrEmpty(classItem.Phone))
+{
+    phoneDigits = Regex.Replace(classItem.Phone, "[^0-9.]", "");
+}
+
+var fav = "add";
+if (classItem.Favourite)
+{
+    fav = "remove";
+}
+
+
+if (Request.UrlReferrer != null)
+{
+    returnURL = Request.UrlReferrer.ToString();
+
+    //if (!returnURL.EndsWith(company))
+    //{
+    //    //returnURL = returnURL.Remove(returnURL.LastIndexOf(company), company.Length);
+    //    //returnURL += company;
+
+
+    if (returnURL.Contains("ReserveConfirmation"))
+    {
+        returnURL = Href(@"~/Classes/" + companyDetails.Name);
+    }
+}
+
+if (UrlData[1] == "ThankYou")
+{
+    returnURL = Href(@"~/Classes/" + companyDetails.Name);
+    ThankYou = true;
+}
+
+if (classItem.IsPrivate)
+{
+    if (!Authenticate.IsEnrolled(companyDetails, classItem))
+    {
+        Response.Redirect("~/AdminError/" + companyDetails.Name, false);
+    }
+
+}
+
+
+
+string itemName = classItem.Name + " (ID:" + classItem.ID + ")";
+string cost = classItem.CostOfSession.ToString("€###0.00 per session");
+if (classItem.IsCourse)
+{
+    cost = classItem.CostOfCourse.ToString("€###0.00 per course");
+}
+
+var user = HttpContext.Current.User.Identity.Name; // db.getUserID(WebSecurity.CurrentUserName);
+string invoice = classItem.ID + "_" + user.ToString() + "_" + DateTime.Now.ToString("ddMMyyhhmmss");
+
+Page.Title = companyDetails.Name + " - " + classItem.Name;
+
+
+    <div id="classDetail" class="container">
+
+
+        @if (Authenticate.IsUserInRole(companyDetails.Name, "admin"))
+        {
+            @AdminBar.getHTML(classItem, companyDetails, returnURL)
+
+            @AttendeeBar.getHTML(classItem, companyDetails)
+        }
+        else
+        {
+            @ToolBar.getHTML(returnURL)
+
+
+            if (!ThankYou && !Authenticate.IsUserInRole(companyDetails.Name, "admin"))
+            {
+                if (classItem.CheckIfSpacesExist())
+                {
+
+                    @ToolBar.reservation(classItem, companyDetails, returnURL)
+
+                }
+            }
+            else
+            {
+                <p class="message-success">
+                    <h3>Order successful. Thank you</h3>
+                    You will receive an email with your details.
+                </p>
+                @*<p>urldata -  @UrlData[1] </p>*@
+
+
+            }
+        }
+
+
+
+
+
+        <label id="classID" style="visibility:hidden;display:none;">ID: @classItem.ID</label>
+
+        <div class="div-class-view cat-@classItem.CategoryID">
+            @if (!classItem.CheckIfSpacesExist() && classItem.SubCategoryName != "Appointment" && classItem.ClassDates.Last() >= DateTime.Now)
+            {
+                <div style="position:absolute; padding: 50px 0px;">
+                    <img style="opacity:0.85;filter:alpha(opacity=85); /* For IE8 and earlier */" src="../Images/fullybooked.png" />
+                </div>
+            }
+            <div class="div-item-left col-md-8">
+                <div class="div-class-view-head1">
+                   @if (classItem.IsPrivate)
+                   {<text>- Private</text>}
+                </div>
+
+                @if (classItem.SubCategoryName == "Appointment")
+                {
+                    <text>
+                        <h1>Appointment</h1>
+                        <h2 class="div-class-view-subHead">
+                            with @if (String.IsNullOrEmpty(classItem.AdminName))
+                            { <text>@companyDetails.Name</text> }
+                            else
+                            { <text>@classItem.AdminName</text>}
+                        </h2>
+                    </text>
+
+                    DateTime nClass = classItem.NextClass();
+                    if (nClass < DateTime.Now)
+                    {
+                        <text>
+                            <div class="div-class-view-date">
+                                This class has finished!
+                            </div>
+                        </text>
+                    }
+                    else
+                    {
+                        <text>
+                            <div class="div-class-view-date">
+                                <div>
+                                    <div class="float-left" style="margin-right:10px;">Starting on</div>
+                                    <div class="float-left" style="font-weight: bold; font-style:italic;">
+                                        @classItem.StartDate.ToString("dddd dd MMMM yyyy")
+                                </div>
+                                <div class="float-clear"></div>
+                            </div>
+                        </div>
+                        <div class="div-class-view-date">
+                            <div>
+                                <div class="float-left" style="margin-right:10px;">Next Date</div>
+                                <div class="float-left" style="font-weight: bold; font-style:italic;">
+                                    @nClass.ToString("dddd dd MMMM yyyy") <br />
+                                @nClass.ToString("h:mmtt", CultureInfo.InvariantCulture) - @nClass.AddMinutes(classItem.Duration).ToString("h:mmtt", CultureInfo.InvariantCulture) @@ @classItem.LocationName
+                            </div>
+                            <div class="float-clear"></div>
+                        </div>
+                    </div>
+                        </text>
+                    }
+
+                }
+                else
+                {
+
+                    DateTime nClass = classItem.NextClass();
+
+                    <text>
+                        <h1 class="entry-title">@classItem.Name </h1>
+                        <h2 class="entry-subtitle">
+                            @classItem.CategoryName - @classItem.SubCategoryName
+                        </h2>
+                <div class="">
+                    @ShareButtons.GetHtml(title)
+                </div>
+                <div class="">
+                    @Favourite.GetHtml(classItem)
+                </div>
+                <div class="clear-fix"></div>
+                        <div class="entry-header-custom-wrap">
+                            <p class="date">
+                                <label>Start Date:</label>
+                                <span id="frontend_date_st_date" class="event_custom frontend_st_date">@classItem.StartDate.ToString("dd MMMM yyyy")</span>
+                            </p>
+
+                            <p class="date">
+                                <label>End Date:</label>
+                                <span id="frontend_date_end_date" class="frontend_end_date frontend_datepicker event_custom">@classItem.EndDate.ToString("dd MMMM yyyy")</span>
+                            </p>
+
+                            <p class="cost">
+                                <label>Cost:</label>
+                                <span class="event_custom">
+                                @if (classItem.IsCourse)
+                                {
+                                    if (classItem.CostOfCourse == 0)
+                                    {
+                                        <text>Free!<br /></text>
+                                    }
+                                    else if (classItem.AbsorbFee)
+                                    {
+                                        <text>@classItem.CostOfCourse.ToString("€#,##0.00 per course")<br /></text>
+                                        if (classItem.AllowDropIn)
+                                        {
+                                            <text>@classItem.CostOfSession.ToString("€#,##0.00 per class")</text>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <text>@Functions.calculateTotalCost(classItem.CostOfCourse).ToString("€#,##0.00 per course (inc fee)")<br /></text>
+                                        if (classItem.AllowDropIn)
+                                        {
+                                            <text>@Functions.calculateTotalCost(classItem.CostOfSession).ToString("€#,##0.00 per class (inc fee)")</text>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    
+                                    if (classItem.CostOfSession == 0)
+                                    {
+                                        <text>Free!<br /></text>
+                                    }
+                                    else if (classItem.AbsorbFee)
+                                    { 
+                                        <text>@classItem.CostOfSession.ToString("€#,##0.00 per class")</text>
+                                    }
+                                    else
+                                    {
+                                        <text>@Functions.calculateTotalCost(classItem.CostOfSession).ToString("€#,##0.00 per class (inc fee)")</text>
+                                    }
+
+                                }
+                                </span>
+                            </p>
+                            <p class="time">
+                                <label>Time:</label>
+                                <span class="event_custom">@classItem.StartDate.ToString("h:mmtt", CultureInfo.InvariantCulture) - @classItem.EndDate.ToString("h:mmtt", CultureInfo.InvariantCulture)</span>
+                            </p>
+                            <p class="address">
+                                <label>Location:</label>
+                                <span id="frontend_address" class="event_custom frontend_address">@classItem.LocationName, @classItem.State</span>
+                            </p>
+                            <p class="repeated">
+                                <label>Repeated:</label>
+                                <span id="frontend_repeated" class="event_custom frontend_repeated">
+                                    @if (classItem.Repeated == Functions.Repeat.Day)
+                                    {
+                                        <text>Daily</text>
+                                    }
+                                    else if (classItem.Repeated == Functions.Repeat.Week)
+                                    {
+                                        <text>Weekly</text>
+                                    }
+                                    else if (classItem.Repeated == Functions.Repeat.Month)
+                                    {
+                                        <text>Monthly</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Never</text>
+                                    }
+                                </span>
+                            </p>
+                        </div>
+
+
+
+
+                    </text>
+                }
+
+
+            </div>
+            <div class="div-item-image col-md-4">
+                @if (!String.IsNullOrEmpty(classItem.Image))
+                {
+                    <img src="@Href(classItem.Image)" alt="@classItem.Name" />
+                }
+
+
+            </div>
+            <br />
+			<div class="clear-fix"></div>
+				
+            <div class="div-item-footer col-md-12">
+
+
+                <div class="event-description">
+                    <div class="mini-title">Description</div>
+                    @{ 
+
+                        //string desc = HttpUtility.HtmlDecode(classItem.Description);
+                        //desc = Regex.Replace(desc, @"<[^>]+>|&nbsp;", "").Trim();
+                        //desc = Regex.Replace(desc, @"\s{2,}", " ");
+                    }
+                        @(new HtmlString(classItem.Description))
+                     </div>
+
+
+                
+                <div class="">
+                    @ShareButtons.GetHtml(title)
+                </div>
+                <div class="">
+                    @Favourite.GetHtml(classItem)
+                </div>
+                <div class="clear-fix"></div>
+
+                <br />
+
+                <div class="entry-header-custom-wrap contact-details">
+                    <p class="contact-name">
+                        <label>Contact Name:</label>
+                        <span id="frontend_instructor" class="event_custom">@classItem.ContactName</span>
+                    </p>
+
+                    <p class="phone">
+                        <label>Phone:</label>
+                        <span id="frontend_phone" class="event_custom"><a href="tel://@phoneDigits">@classItem.Phone</a></span>
+                    </p>
+
+                    <p class="email">
+                        <label>Email:</label>
+                        <span id="frontend_email" class="event_custom"><a href="mailto:@classItem.Email?subject=@classItem.Name%20on%20DuckRow.net">@classItem.Email</a></span>
+                    </p>
+
+                </div>
+                   <div class="float-clear"></div>
+
+
+
+                <div class="col-md-8">
+                    <div class="">
+                        <div class="mini-title">Location</div>
+                        @{var classLocation = db.getClassLocation(classItem.ID.ToString());}
+
+                        @*@Map.getHTML(latitude: Convert.ToDouble(classLocation.ElementAt(0).Latitude),
+                     longitude: Convert.ToDouble(classLocation.ElementAt(0).Longitude),
+                     width: 450,
+                     height: 250,
+                     strPopup: classItem.LocationName,
+                     categoryID: classItem.CategoryID)*@
+
+                        @Map.GetMap(latitude: Convert.ToDouble(classLocation.ElementAt(0).Latitude),
+                     longitude: Convert.ToDouble(classLocation.ElementAt(0).Longitude),
+                     width: "650px",
+                     height: "450px",
+                     strPopup: classItem.LocationName,
+                     categoryID: classItem.CategoryID)
+
+                    </div>
+                </div>
+                <div class="col-md-4 row">
+                @if (classItem.IsCourse)
+                {
+                    <div>
+                        <div style="padding: 0px 0px 0px 0px;">
+                            @ClassSchedule.getHTML(companyDetails, classItem.ID.ToString())
+                        </div>
+                    </div>
+                }
+				
+				<div class="classDetail-Advert">
+                @Advertisements.SideBar()
+                @Advertisements.MobileSideBar()
+				</div>
+								
+                </div>
+                <div class="float-clear"> </div>
+
+            </div> @*//end div footer*@
+
+        </div>
+        <div class="float-clear"></div>
+
+
+        @* Do not show these buttons on the Thank you page *@
+        @if (!ThankYou && !Authenticate.Admin(companyDetails.Name))
+        {
+            if (classItem.CheckIfSpacesExist())
+            {
+
+                @*//check if a logged in user has already booked this class*@
+        if (HttpContext.Current.User.Identity.IsAuthenticated)
+        {
+            @*List<DateTime> userDates = db.hasUserBookedClass(classItem.ID, user.ToString());
+
+                if (userDates.Count == classItem.ClassDates.Count())
+                {
+                    <h3>You have already booked this class!</h3>
+                }
+                else
+                {
+                    if (userDates.Count() != 0)
+                    {
+                        <h3>You are attending this class on:</h3>
+                        <ul>
+                            @foreach (DateTime d in userDates)
+                            {
+                                <li>@d.ToString("ddd dd MMM yyyy @ HH:mm")</li>
+                            }
+
+                        </ul>
+                    }
+
+                    //Book and Pay
+                    string paypalBusiness = companyDetails.PaypalEmail;
+                    bool absorbFees = companyDetails.PaypalAbsorbFees;
+
+                    double handling = 0;
+                    if (!absorbFees)
+                    {
+                        //fees 3.4% + .35c
+                        handling = Convert.ToDouble(cost);
+                        handling = (handling * 0.034) + 0.35;
+                    }
+
+                    @Payment.Paypal.PayButton(classItem, WebSecurity.CurrentUserId.ToString(), userDates)
+
+
+
+                }*@
+        }
+        else if (!classItem.IsPrivate)
+        {
+            <div class="agenda-view">
+                <div class="loginRequired" onclick="window.location.href='@Href("~/Account/Login/" + companyDetails.Name + "?ReturnUrl=" + Request.Url.AbsolutePath)'" title="Logon Required">
+                    Login to book your place now <br />
+                </div>
+            </div>
+                }
+            }
+        }
+
+    </div>
+}

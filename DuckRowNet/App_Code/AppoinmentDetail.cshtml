@@ -1,0 +1,136 @@
+﻿@using System.Globalization;
+@using DuckRowNet.Helpers;
+@using DuckRowNet.Helpers.Object;
+
+@helper getHTML(GroupClass classItem, CompanyDetails companyDetails)
+{
+string returnURL = "";
+
+if (Request.UrlReferrer != null)
+{
+    returnURL = Request.UrlReferrer.ToString();
+
+    if (returnURL.Contains("ReserveConfirmation"))
+    {
+        returnURL = Href(@"~\Classes\" + companyDetails.Name);
+    }
+}
+
+DAL db = new DAL();
+
+//appointments must be private
+//if (classItem.IsPrivate)
+//{
+//check if the user is enrolled or admin
+if (!HttpContext.Current.User.Identity.IsAuthenticated
+    || !db.IsEnrolled(classItem.ID.ToString(), HttpContext.Current.User.Identity.Name))
+{
+    if (!Authenticate.Admin(companyDetails.Name))
+    {
+        Response.Redirect("~/AdminError/" + companyDetails.Name);
+    }
+}
+//}
+
+string itemName = classItem.Name + " (ID:" + classItem.ID + ")";
+string cost = classItem.CostOfCourse.ToString("####.00");
+
+var user = HttpContext.Current.User.Identity.Name; // db.getUserID(WebSecurity.CurrentUserName);
+string invoice = classItem.ID + "_" + user.ToString() + "_" + DateTime.Now.ToString("ddMMyyhhmmss");
+
+Page.Title = companyDetails.Name + " - " + classItem.Name;
+
+
+    <div id="classDetail">
+
+
+        @if (Authenticate.Admin(companyDetails.Name))
+        {
+            @AdminBar.getHTML(classItem, companyDetails, returnURL)
+
+            @AttendeeBar.getHTML(classItem, companyDetails)
+        }
+        else
+        {
+            @ToolBar.getHTML(returnURL)
+
+            <p>
+                @if (returnURL != "")
+                {
+                    <a href="@returnURL">back to list</a>
+                }
+            </p>
+
+        }
+
+
+        <label id="classID" style="visibility:hidden; display:none;">ID: @classItem.ID</label>
+
+        <div class="div-class-view">
+            <div class="div-item-left">
+                <div class="div-class-view-head1">Class Detail</div>
+                <div class="div-class-view-head2">Appointment</div>
+                <div class="div-class-view-subHead">
+                    with
+                    @{
+                        foreach (var adminID in classItem.AdminIDList)
+                        {
+                            var adminDetails = db.getUserDetails(adminID, "user");
+                            if (!adminDetails.FirstName.IsEmpty() || !adminDetails.LastName.IsEmpty())
+                            {
+                                <text>
+                                    @adminDetails.FirstName @adminDetails.LastName <br />
+                                </text>
+                            }
+                        }
+                    }
+                </div>
+                <div class="div-class-view-row">
+                    This appointment is scheduled for <br /> @classItem.StartDate.ToString("dddd dd MMMM yyyy") -
+                    @classItem.StartDate.ToString("h:mmtt", CultureInfo.InvariantCulture) to @classItem.StartDate.AddMinutes(Convert.ToInt32(classItem.Duration)).ToString("h:mmtt", CultureInfo.InvariantCulture)<br />
+                    Location: @classItem.LocationName <br />
+                    Cost: @cost euro<br />
+
+                </div>
+
+            </div>
+            <br />
+            <div class="div-item-footer">
+                <div class="div-class-view-row">@classItem.Description</div>
+                <br />
+                <div class="float-left">
+                    <div id="map_canvas" style="width:320px; height:250px"></div>
+                </div>
+                <div class="float-clear"></div>
+
+                <div class="div-class-view-row">
+
+                </div>
+                @*
+                    <div class="div-class-view-row">
+
+                        @if (Helper.Authenticate.Admin(company))
+                        {
+                            var deleteURL = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) +
+                                VirtualPathUtility.ToAbsolute("~/Admin/DeleteClass/" + classItem.ID);
+                        <text>
+
+                        <br/>
+                        <div id="dialog" title="Confirmation Required">
+                            Are you sure you want to delete this appointment? <br />
+                            <b>QT will email any clients attending this appointment if they have supplied an email address. <br />
+                            But we recommend that you contact each client directly.</b>
+                        </div>
+
+                        <a class="confirmLink" href="@deleteURL">Delete Appointment</a>
+
+                        </text>
+                        }
+                    </div>*@
+
+            </div> @*//end div footer*@
+        </div>
+    </div>
+}
+
+

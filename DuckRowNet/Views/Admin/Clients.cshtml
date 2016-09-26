@@ -1,0 +1,56 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@{
+    ViewBag.Title = "Clients";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container">
+    <h2>Clients</h2>
+
+    <table class="table_ClientList">
+        <tr class="table_ClientList_Head">
+            @*<td style="width:30px;">ID</td>*@
+            <td style="width:180px;">Email</td>
+            <td style="width:80px;">First Name</td>
+            <td style="width:80px;">Last Name</td>
+            <td style="width:80px;">Phone</td>
+            <td style="width:85px;">Address</td>
+            <td style="width:85px;">City</td>
+            <td style="width:85px;">County</td>
+            <td style="width:30px;">User</td>
+        </tr>
+        @foreach (PersonDetails client in ViewBag.Clients)
+        {
+            var strLink = Href("~/Admin/Client/" + ViewBag.CompanyName + "/" + client.ID.ToString());
+            if (client.Type == Functions.PersonType.Client)
+            {
+                strLink = Href("~/Admin/Client/" + ViewBag.CompanyName + "/c_" + client.ID.ToString());
+            }
+            strLink = "parent.location = '" + strLink + "'";
+
+            <tr class="table_ClientList_Row" onclick="@strLink" onmouseover="cursor='hand'">
+                @*<td>@client.UserID</td>*@
+                <td>@client.Email</td>
+                <td>@client.FirstName</td>
+                <td>@client.LastName</td>
+                <td>@client.Phone</td>
+                <td>@client.Address1</td>
+                <td>@client.City</td>
+                <td>@client.State</td>
+                <td>@client.Country</td>
+                <td style="text-align:center;">
+                    @if (client.Type == Functions.PersonType.User)
+                {<text><img src="@Href("~/Images/tick.png")" alt="user" title="This is an actual DuckRow user, not a user created by @ViewBag.CompanyName" /></text>}
+                else {<text></text>}
+            </td>
+        </tr>
+        }
+    </table>
+
+    <div>
+        <br />
+        <a href="@Href("~/Admin/AddClient/" + ViewBag.CompanyName)">Add a New Client</a>
+    </div>
+
+</div>

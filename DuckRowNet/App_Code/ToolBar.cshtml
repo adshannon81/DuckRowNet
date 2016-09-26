@@ -1,0 +1,218 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@using Microsoft.AspNet.Identity;
+@helper getHTML(String returnURL = "")
+    {
+      
+       
+        
+    <text>
+          
+    <div class="toolBar">
+        <div class="float-left">
+            @if (returnURL != "")
+            {
+                <a class="noHighlightLink" href="@returnURL" title="return" ><div id="toolbar-return" class="toolbar-button"></div></a>
+            }
+        </div>
+    </div>
+    <div class="float-clear"></div>
+    
+    </text>
+           
+    
+}
+
+@helper reservation(GroupClass gClass, CompanyDetails companyDetails, String returnURL = "")
+    {
+    
+                    
+        @*//check if a logged in user has already booked this class*@
+    if (HttpContext.Current.User.Identity.IsAuthenticated )
+    {
+        if (gClass.AllowReservation || gClass.AllowPayment)
+        {
+            DAL db = new DAL();
+            List<DateTime> userDates = db.hasUserBookedClass(gClass.ID.ToString(), HttpContext.Current.User.Identity.GetUserId());
+
+            if (userDates.Count == gClass.ClassDates.Count())
+            {
+                <div class="agenda-view ">
+                    <h3>You have booked this class!</h3>
+                </div>
+            }
+            else if (userDates.Count() != 0 || (gClass.AllowPayment && !companyDetails.PaypalEmail.IsEmpty()) || gClass.AllowReservation)
+            {
+                <div class="agenda-view ">
+
+                    @{
+
+                        if (userDates.Count() != 0)
+                        {
+                            <h3>You are attending this class on:</h3>
+                            <ul>
+                                @foreach (DateTime d in userDates)
+                                {
+                                    <li>@d.ToString("ddd dd MMM yyyy @ HH:mm")</li>
+                                }
+                            </ul>
+                        }
+
+                        string costTotal = gClass.CostOfCourse.ToString("€#,##0.00");
+
+                        if (!gClass.AbsorbFee && gClass.AllowPayment)
+                        {
+                            costTotal = Functions.calculateTotalCost(gClass.CostOfCourse).ToString("€#,##0.00 inc fee");
+                        }
+                        string costSingle = gClass.CostOfSession.ToString("€#,##0.00");
+
+                        if (!gClass.AbsorbFee && gClass.AllowPayment)
+                        {
+                            costSingle = Functions.calculateTotalCost(gClass.CostOfSession).ToString("€#,##0.00 inc fee");
+                        }
+                        if (!gClass.IsCourse)
+                        {
+                            costTotal = costSingle;
+                        }
+
+
+                        List<DateTime>
+                            dList = new List<DateTime>
+                                ();
+                        foreach (DateTime cDate in gClass.ClassDates)
+                        {
+                            if (userDates.IndexOf(cDate) == -1 && cDate >= DateTime.Now)
+                            {
+                                dList.Add(cDate);
+                            }
+                        }
+
+                        if (dList.Count != 0)
+                        {
+                            <script>
+                                $(document).ready(function () {
+                                    allowDropIn();
+
+                                    $("#entireCourse").change(function () {
+                                        allowDropIn();
+                                    });
+
+                                    $("#dropInDate").change(function () {
+                                        $("#reserveLink").attr("href", "@Href("~/Account/ReservationConfirmation/" + gClass.ID)?date=" + $("#dropInDate").val());
+                                    });
+
+                                    function allowDropIn() {
+                                        //alert($("#entireCourse").val());
+                                        if (typeof $("#entireCourse").val() === "undefined" || $("#entireCourse").val() == "yes") {
+                                            //alert("didn't make it");
+                                            $("#singleSession").hide();
+                                            $('#totalCost').html("@costTotal");
+                                            $("#reserveLink").attr("href", "@Href("~/Account/ReservationConfirmation/" + gClass.ID)");
+                                        }
+                                        else {
+                                            //alert("here");
+                                            $("#singleSession").show();
+                                            $('#totalCost').html("@costSingle");
+                                            //alert("2");
+                                            $("#reserveLink").attr("href", "@Href("~/Account/ReservationConfirmation/" + gClass.ID)?date=" + $("#dropInDate").val());
+
+                                        }
+                                    };
+                                });
+                            </script>
+
+                            <form enctype="multipart/form-data" method="post" action="">
+                                <div class="float-left">
+                                    @if (!gClass.IsCourse)
+                                    {
+                                        <div id="singleSession" style="display:block;">
+                                            @*<div class="label">Select Session </div>*@
+                                            <select id="dropInDate" name="dropInDate" class="longSelect2">
+                                                @foreach (DateTime d in dList)
+                                                {
+                                                    <text>
+                                                        <option value="@d.ToString("yyyy-MM-dd HH:mm:ss")">@d.ToString("dd MMM yyyy @ HH:mm")</option></text>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="float-left" style="padding: 20px;">
+                                            <div class="label">Cost per session</div>
+                                            <span>@costTotal</span>
+                                        </div>
+                                    }
+                                    else if (gClass.AllowDropIn)
+                                    {
+                                        <div>
+                                            @*<div class="label">Book Now</div>*@
+                                            <select id="entireCourse" name="entireCourse" class="longSelect2">
+                                                @if (userDates.Count == 0 && gClass.ClassDates.First() >= DateTime.Now)
+                                                {
+                                                    <text>
+                                                        <option value="yes">Entire Course</option></text>
+                                                    //cost = Function.calculateTotalCost(gClass.CostOfCourse).ToString("€#,##0.00");
+                                                }
+                                                <option value="no">Single Class Only</option>
+                                            </select>
+                                        </div>
+                                        <div id="singleSession">
+                                            @*<div class="label">Select Session </div>*@
+                                            <select id="dropInDate" name="dropInDate" class="longSelect2">
+                                                @foreach (DateTime d in dList)
+                                                {
+                                                    <text>
+                                                        <option value="@d.ToString("yyyy-MM-dd HH:mm:ss")">@d.ToString("dd MMM yyyy @ HH:mm")</option></text>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="float-left" style="padding: 20px;">
+                                            <div class="label">Total Cost - <span id="totalCost"></span></div>
+
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="float-left" style="padding: 20px;">
+                                            <div class="label">Complete Course</div>
+                                            <div class="label">@costTotal</div>
+                                        </div>
+                                    }
+
+                                </div>
+
+                                <div class="float-left" style="text-align:center;">
+                                    @if (gClass.AllowPayment && !companyDetails.PaypalEmail.IsEmpty())
+                                    {
+                                        <text>@PayPalDuckRow.PayButton(gClass, HttpContext.Current.User.Identity.Name, userDates)</text>
+                                    }
+
+                                    @if (gClass.AllowReservation)
+                                    {
+                                        <div class="paymentDiv float-left">
+                                            <a id="reserveLink" style="text-decoration:none;" href="@Href("~/Account/ReservationConfirmation/" + gClass.ID)" title="Reserve Now">Reserve & Pay Later</a>
+                                        </div>
+                                    }
+                                </div>
+
+                            </form>
+                            <div class="float-clear"></div>
+
+
+                            }
+                        }
+            </div>
+                    
+                    }
+                            }
+                            }
+                            else if (!gClass.IsPrivate)
+                            {
+                            <div class="agenda-view ">
+                                <div class="loginRequired" onclick="window.location.href='@Href("~/Account/Login/" + companyDetails.Name + "?ReturnUrl=" + Request.Url.AbsolutePath)'" title="Logon Required">
+                                    Interested in going? Login Now<br />
+                                </div>
+                            </div>
+                            }
+
+                            <div class="float-clear"></div>
+                            }

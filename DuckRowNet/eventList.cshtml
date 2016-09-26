@@ -1,0 +1,274 @@
+﻿@using System.Text.RegularExpressions;
+@using DuckRowNet.Helpers;
+@using DuckRowNet.Helpers.Object;
+@{
+    //This page returns json data
+    
+    Response.AddHeader("Content-Type","application/json");
+
+    var returnURL = "";
+    if (Request.UrlReferrer != null)
+    {
+        returnURL = Request.UrlReferrer.ToString();
+    }
+
+
+    var callback = Request.Params["callback"];
+    
+    DAL db = new DAL();
+
+    var company = "";
+    var subCategories = "";
+    var instructor = "";
+    var active = "";
+    
+    if (Request.Params["name"] != null && Request.Params["name"] != "undefined")
+    {
+        company = Request.Params["name"];
+    }
+    if (Request.Params["subcategories"] != null && Request.Params["subcategories"] != "undefined")
+    {
+        subCategories = Request.Params["subcategories"];
+    }
+    if (Request.Params["instructor"] != null && Request.Params["instructor"] != "undefined")
+    {
+        instructor = Request.Params["instructor"];
+    }
+    if (Request.Params["active"] != null && Request.Params["active"] != "undefined")
+    {
+        active = Request.Params["active"];
+    }
+    
+    List<string> subCategoryList = new List<string>();
+    foreach(string s in subCategories.Split(','))
+    {
+        if (!s.IsEmpty())
+        {
+            subCategoryList.Add(s);
+        }
+    }
+    List<string> instructorList = new List<string>();
+    foreach(string s in instructor.Split(','))
+    {
+        if(!s.IsEmpty())
+        {
+            instructorList.Add(s);
+        }
+    }
+    
+    
+    
+    company = Authenticate.ValidateStrict(company);
+    
+    string returnResult = "";
+    
+    if (company != "Qwerty Time")
+    {
+        returnResult = "{\"events\":[";
+        
+        var companyURL = db.getCompanyURL(company);
+
+        //returnResult += company + ", " + companyURL;
+        
+        //&& returnURL.Contains(companyURL))
+        //if (!String.IsNullOrEmpty(companyURL)) 
+        //{
+            List<GroupClass> classes = db.selectCurrentPublicClasses(company, subCategoryList, instructorList );
+            classes = classes.OrderBy(c => c.NextClass()).ToList();
+            //returnResult += classes.Count;
+            
+            if(active == "future-only")
+            {
+                classes = classes.Where(c => c.StartDate >= DateTime.Now).ToList();
+                
+            }else if (active == "running-only")
+            {
+                classes = classes.Where(c => c.StartDate < DateTime.Now).ToList(); 
+            }
+                        
+            var detailView = "";
+            if (Request.Params["detail"] != null)
+            {
+                detailView = Request.Params["detail"];
+            }
+            
+            int count= 1;
+
+            if (detailView == "full")
+            {
+                foreach (var item in classes)
+                {
+                    var image = "";
+                    var companyImage = "";
+                    var description = "";
+                    
+                    if (!String.IsNullOrEmpty(item.Image))
+                    {
+                        image = Href(item.Image).ToString();
+                    }
+                    if(!String.IsNullOrEmpty(item.CompanyImage))
+                    {
+                        companyImage = Href(item.CompanyImage).ToString();
+                    }
+
+                    description = Regex.Replace(item.Description, "<[^>]*>", string.Empty);
+                    description = Regex.Replace(description, "\\r\\n", string.Empty);
+                    if (description.Length >= 85)
+                    {
+                        description = description.Substring(0, 76) +  "......"; 
+                    }
+
+                    returnResult += "{\"startDate\":\"" + item.StartDate.ToString("dddd, dd MMM") + "\"," +
+                        "\"startTime\":\"" + item.StartDate.ToString("HH:mm") + " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                        "\"nextDate\":\"" + item.NextClass().ToString("ddd, dd MMM") + "\"," +
+                        "\"nextTime\":\"" + item.NextClass().ToString("HH:mm") + "\", " + // " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                        "\"name\":\"" + item.Name + "\", " +
+                        "\"company_image\":\"" + companyImage + "\", " +
+                        "\"image\":\"" + image + "\", " +
+                        "\"desc\":\"" + description + "\", " +
+                        "\"subCategory\":\"" + item.SubCategoryName + "\", " +
+                        "\"location\":\"" + item.LocationName + "\", " +
+                        "\"classType\":\"" + item.ClassType + "\", " +
+                        "\"remainingCapacity\":\"" + item.RemainingCapacity.ToString() + "\", " +
+                        "\"id\":\"" + item.ID.ToString() + "\", " +
+                        "\"url\":\"" + Href("~/Classes/"+ item.ID.ToString() ) + "\"} ";
+
+                    if (count < classes.Count)
+                    {
+                        returnResult += ",";
+                    }
+
+
+                }
+            }
+            else
+            {
+                foreach (var item in classes)
+                {
+
+                    returnResult += "{\"startDate\":\"" + item.StartDate.ToString("dddd, dd MMM") + "\"," +
+                        "\"startTime\":\"" + item.StartDate.ToString("HH:mm") + " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                        "\"nextDate\":\"" + item.NextClass().ToString("ddd, dd MMM") + "\"," +
+                        "\"nextTime\":\"" + item.NextClass().ToString("HH:mm") + "\", " + // + " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                        "\"name\":\"" + item.Name + "\", " +
+                        "\"remainingCapacity\":\"" + item.RemainingCapacity.ToString() + "\", " +
+                        "\"id\":\"" + item.ID.ToString() + "\"} ";
+
+                    if (count < classes.Count)
+                    {
+                        returnResult += ",";
+                    }
+
+
+                }
+            }
+
+            //}
+            returnResult += "]}";
+
+            returnResult = callback + "(" + returnResult + ")";
+
+    }
+
+
+@*    if (company != "Qwerty Time")
+    {
+        var companyURL = db.getCompanyURL(company);
+        
+        //&& returnURL.Contains(companyURL))
+        if (!String.IsNullOrEmpty(companyURL)) 
+        {
+            var classes = db.selectCurrentPublicClasses(company);
+
+            classes = classes.OrderBy(c => c.NextClass()).ToList();
+            
+            var detailView = "";
+            if (Request.Params["detail"] != null)
+            {
+                detailView = Request.Params["detail"];
+            }
+            
+            int count= 1;
+
+            if (detailView == "full")
+            {
+                    <link href="@Href("~/Widgets/style.css")" rel="Stylesheet" />
+                    <table class="qt_eventListTable">
+                        <tr class="qt_eventListTable_Head">
+                            @*<td style="width:30px;">ID</td>
+                            <td style="width:150px;">Starting On</td>
+                            <td style="width:100px;">Time</td>
+                            <td style="width:180px;">Name</td>
+                            <td style="width:120px;">Sub-Category</td>
+                            <td style="width:120px;">Location</td>
+                            <td style="width:80px;"></td>
+                        </tr>
+
+                        @foreach (var item in classes)
+                        {
+                            var strLink = Href("~/Classes/" + item.ID.ToString());
+                            strLink = "parent.location = '" + strLink + "'";
+        
+                            <tr class="qt_eventListTable_Row"  onclick="@strLink" >
+                                <td>@item.NextClass().ToString("dddd, dd MMM")</td>
+                                <td>@item.NextClass().ToString("HH:mm") - @item.EndDate.ToString("HH:mm")</td>
+                                <td>@item.Name</td>
+                                <td>@item.SubCategoryName</td>
+                                <td>@item.LocationName</td>
+                                <td>Book Now</td>
+                            </tr>
+                            
+                            returnResult += "{\"start\":\"" + item.NextClass().ToString("dddd, dd MMM") + "\"," +
+                                "\"time\"" + item.NextClass().ToString("HH:mm") + " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                                "\"name\"" + item.Name + "\", " +
+                                "\"subCategory\"" + item.SubCategoryName + "\", " +
+                                "\"location\"" + item.LocationName + "\", " +
+                                "\"id\"" + item.ID.ToString() + "\"} ";
+                                
+                             if(count < classes.Count)
+                             {
+                                 returnResult +="," ;
+                             }                                
+                                
+                      
+                        }
+                    </table>
+            }
+            else
+            {
+    
+                    <link href="@Href("~/Widgets/style.css")" rel="Stylesheet" />
+                    <table class="qt_eventListTable">
+                        <tr class="qt_eventListTable_Head">
+                            @*<td style="width:30px;">ID</td>
+                            <td style="width:150px;">Starting On</td>
+                            <td style="width:100px;">Time</td>
+                            <td style="width:120px;">Name</td>
+                            <td style="width:80px;"></td>
+                        </tr>
+                        @foreach (var item in classes)
+                        {
+                            var strLink = Href("~/Classes/" + item.ID.ToString());
+                            strLink = "parent.location = '" + strLink + "'";
+        
+                            <tr class="qt_eventListTable_Row"  onclick="@strLink" >
+                                <td>@item.NextClass().ToString("dddd, dd MMM")</td>
+                                <td>@item.NextClass().ToString("HH:mm") - @item.EndDate.ToString("HH:mm")</td>
+                                <td>@item.Name</td>
+                                <td>Book Now</td>
+                            </tr>
+                        }
+                    </table>
+    
+            }
+        }
+
+
+    }
+}*@
+
+
+    
+}
+@Html.Raw(returnResult)
+@*@Html.Raw("{ \"employees\" : [\"firstName\":\"John\" , \"lastName\":\"Doe\" },{ \"firstName\":\"Anna\" , \"lastName\":\"Smith\" } ]}")*@

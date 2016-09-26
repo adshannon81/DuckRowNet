@@ -1,0 +1,331 @@
+﻿@using DuckRowNet.Helpers.Object;
+@using DuckRowNet.Helpers;
+@using System.Globalization;
+@using System.Text.RegularExpressions;
+@{
+    ViewBag.Title = "ReservationConfirmation";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    GroupClass classItem = ViewBag.classItem;
+    CompanyDetails companyDetails = ViewBag.companyDetails;
+}
+
+<div class="container">
+
+    @if (ViewBag.UpdateSuccess)
+    {
+        <div id="fadeDIV">
+            <p class="message-success">
+                @ViewBag.message
+            </p>
+        </div>
+
+    }
+    @ToolBar.getHTML(ViewBag.ReturnUrl)
+
+
+
+    @Html.ValidationSummary("Please correct the errors and try again.")
+
+    <div class="div-class-view cat-@classItem.CategoryID">
+        <div class="div-item-left  col-md-8">
+            <div class="div-class-view-head1">Reserve This Class?</div>
+            <h1 class="entry-title">@classItem.Name </h1>
+            <h2 class="entry-subtitle">
+                @classItem.CategoryName - @classItem.SubCategoryName
+            </h2>
+
+            <div class="clear-fix"></div>
+
+            <div class="entry-header-custom-wrap">
+                <p class="date">
+                    <label>Start Date:</label>
+                    <span id="frontend_date_st_date" class="event_custom frontend_st_date">@classItem.StartDate.ToString("dd MMMM yyyy")</span>
+                </p>
+
+                <p class="date">
+                    <label>End Date:</label>
+                    <span id="frontend_date_end_date" class="frontend_end_date frontend_datepicker event_custom">@classItem.EndDate.ToString("dd MMMM yyyy")</span>
+                </p>
+
+                <p class="cost">
+                    <label>Cost:</label>
+                    <span class="event_custom">
+                        @if (classItem.IsCourse)
+                        {
+                            if (classItem.AbsorbFee)
+                            {
+                                <text>@classItem.CostOfCourse.ToString("€#,##0.00 per course")<br /></text>
+                                if (classItem.AllowDropIn)
+                                {
+                                    <text>@classItem.CostOfSession.ToString("€#,##0.00 per class")</text>
+                                }
+                            }
+                            else
+                            {
+                                <text>@Functions.calculateTotalCost(classItem.CostOfCourse).ToString("€#,##0.00 per course (inc fee)")<br /></text>
+                                if (classItem.AllowDropIn)
+                                {
+                                    <text>@Functions.calculateTotalCost(classItem.CostOfSession).ToString("€#,##0.00 per class (inc fee)")</text>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (classItem.AbsorbFee)
+                            { <text>@classItem.CostOfSession.ToString("€#,##0.00 per class")</text>}
+                            else
+                            {<text>@Functions.calculateTotalCost(classItem.CostOfSession).ToString("€#,##0.00 per class (inc fee)")</text>}
+
+                        }
+                    </span>
+                </p>
+                <p class="time">
+                    <label>Time:</label>
+                    <span class="event_custom">@classItem.StartDate.ToString("h:mmtt", CultureInfo.InvariantCulture) - @classItem.EndDate.ToString("h:mmtt", CultureInfo.InvariantCulture)</span>
+                </p>
+                <p class="address">
+                    <label>Location:</label>
+                    <span id="frontend_address" class="event_custom frontend_address">@classItem.LocationName, @classItem.State</span>
+                </p>
+                <p class="repeated">
+                    <label>Repeated:</label>
+                    <span id="frontend_repeated" class="event_custom frontend_repeated">
+                        @if (classItem.Repeated == Functions.Repeat.Day)
+                        {
+                            <text>Daily</text>
+                        }
+                        else if (classItem.Repeated == Functions.Repeat.Week)
+                        {
+                            <text>Weekly</text>
+                        }
+                        else if (classItem.Repeated == Functions.Repeat.Month)
+                        {
+                            <text>Monthly</text>
+                        }
+                        else
+                        {
+                            <text>Never</text>
+                        }
+                    </span>
+                </p>
+            </div>
+
+           
+
+
+        </div>
+        <div class="div-item-image col-md-4">
+            @if (!String.IsNullOrEmpty(classItem.Image))
+            {
+                <img src="@Href(classItem.Image)" alt="@classItem.Name" />
+            }
+
+
+        </div>
+        <br />
+        <div class="div-item-footer col-md-12">
+
+
+            <div class="event-description">
+                <div class="mini-title">Description</div>
+                @{
+
+                    string desc = HttpUtility.HtmlDecode(classItem.Description);
+                    desc = Regex.Replace(desc, @"<[^>]+>|&nbsp;", "").Trim();
+                    desc = Regex.Replace(desc, @"\s{2,}", " ");
+                }
+                @desc
+            </div>
+            <br />
+
+            <div class="entry-header-custom-wrap contact-details">
+                <p class="contact-name">
+                    <label>Contact Name:</label>
+                    <span id="frontend_instructor" class="event_custom">@classItem.ContactName</span>
+                </p>
+
+                <p class="phone">
+                    <label>Phone:</label>
+                    <span id="frontend_phone" class="event_custom">@classItem.Phone</span>
+                </p>
+
+                <p class="email">
+                    <label>Email:</label>
+                    <span id="frontend_email" class="event_custom">@classItem.Email</span>
+                </p>
+
+            </div>
+            <div class="float-clear"></div>
+
+        </div> @*//end div footer*@
+
+    </div>
+    <div class="float-clear"></div>
+
+    <br />
+    <div class="reservation col-md-12">
+        @if (Authenticate.Admin(companyDetails.Name) && ViewBag.count != 0)
+        {
+            <form action="" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row">
+                    <div class="label">Select a Client</div>
+                    <select name="client" class="longSelect">
+                        @foreach (PersonDetails client in ViewBag.clientList)
+                        {
+                            <option @if (client.Type == Functions.PersonType.Client) { <text> value="c_@client.ID" </text>    } else { <text> value="@client.ID" </text>    }>@client.LastName, @client.FirstName (@client.Email)</option>
+                        }
+                    </select>
+
+                    <a href="@ViewBag.addClient" target="_self">add a new client</a>
+                    <br />
+
+                </div>
+                <br />
+
+                @if (classItem.AllowDropIn || !classItem.IsCourse)
+                {
+                    <script>
+                        $(document).ready(function () {
+                            allowDropIn();
+
+                            $("#entireCourse").change(function () {
+                                allowDropIn();
+                            });
+
+                            function allowDropIn() {
+                                if ($("#entireCourse").val() == "no") {
+                                    $("#singleSession").show();
+                                }
+                                else {
+                                    $("#singleSession").hide();
+                                }
+                            };
+                        });
+                    </script>
+
+                        <div class="row" @if (!classItem.IsCourse) { <text> style="display:none;" </text>    }>
+                            <div class="label">Reserve</div>
+                            <select id="entireCourse" name="entireCourse" class="longSelect">
+                                @if (classItem.RemainingCapacity != 0)
+                                {
+                                    <option value="yes">Entire Course</option>}
+                                <option value="no" @if (!classItem.IsCourse) { <text> selected="selected" </text>    }>Single Class Only</option>
+                            </select>
+                        </div>
+
+                        <div class="row" id="singleSession">
+                            <div class="label">Select Session:</div>
+                            <select id="dropInDate" name="dropInDate" class="longSelect">
+                                @foreach (DateTime cDate in classItem.ClassDates)
+                                {
+                                    if (classItem.RemainingCapacityList[classItem.ClassDates.IndexOf(cDate)] != 0)
+                                    {
+                                        //if (classItem.MaxCapacity != classItem.RemainingCapacityList[i]) ;
+                                        <text>
+                                            <option value="@cDate.ToString("yyyy-MM-dd HH:mm:ss")">@cDate.ToString("dd MMM yyyy @ HH:mm")</option></text>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <br />
+                }
+                <div class="row" style="padding-left:130px;">
+                    <input type="submit" value="Confirm Reservation" />
+                    <img class="loading" alt="loading..." style="display:none; height:32px; width:32px; cursor:pointer; padding:0px;" src="@Href("~/Images/ajax-loader_small.gif")" />
+                </div>
+            </form>
+        }
+        else if (ViewBag.count == 0)
+        {
+            <div class="row">
+                Fully Boooked
+            </div>
+        }
+        else
+        {
+            if (!ViewBag.updateSuccess)
+            {
+                if (ViewBag.singleSession)
+                {
+                    <div class="label">
+                        Requesting reservation for @ViewBag.sessionDate.ToString("dddd dd MMM yyyy @ h:mmtt", CultureInfo.InvariantCulture). <br />
+                        Cost payable on the day: @classItem.CostOfSession.ToString("€#,##0.00")
+                    </div>
+                }
+
+                <form action="" method="post">
+
+                    @Html.AntiForgeryToken()
+                    <script>
+                        $(document).ready(function () {
+                            allowDropIn();
+
+                            $("#entireCourse").change(function () {
+                                allowDropIn();
+                            });
+
+                            function allowDropIn() {
+                                if ($("#entireCourse").val() == "no") {
+                                    $("#singleSession").show();
+                                }
+                                else {
+                                    $("#singleSession").hide();
+                                }
+                            };
+                        });
+                    </script>
+
+                    <div class="row" @if (!classItem.IsCourse) { <text> style="display:none;" </text>    }>
+                        <div class="label">Reserve</div>
+                        <select id="entireCourse" name="entireCourse" class="longSelect">
+                            @if (classItem.RemainingCapacity != 0)
+                            {
+                                <option value="yes">Entire Course</option>}
+
+                            @if (classItem.AllowDropIn)
+                            {
+                                <option value="no" @if (!classItem.IsCourse || ViewBag.singleSession) { <text> selected="selected" </text>    }>Single Class Only</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row" id="singleSession">
+                        <div class="label">Select Session:</div>
+                        <select id="dropInDate" name="dropInDate" class="longSelect">
+                            @foreach (DateTime cDate in classItem.ClassDates)
+                            {
+                                if (cDate > DateTime.Now && classItem.RemainingCapacityList[classItem.ClassDates.IndexOf(cDate)] != 0)
+                                {
+                                    //if (classItem.MaxCapacity != classItem.RemainingCapacityList[i]) ;
+                                    <option value="@cDate.ToString("yyyy-MM-dd HH:mm:ss")"
+                                            @if (ViewBag.sessionDate == cDate) { <text> selected="selected" </text>    }>
+                                        @cDate.ToString("dd MMM yyyy @ HH:mm")
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <input type="text" id="classID" name="classID" value="@classItem.ID" style="visibility:hidden;display:none;" />
+                    <br />
+                    <span id="commentQuestion" style="cursor:pointer;font-size:16px;font-weight:bold; padding-left:10px;">Add Comments or Special Requests?</span><br />
+                    <textarea name="comments" id="comments" cols="60" rows="5" >
+                        @ViewBag.comments.Trim()
+                    </textarea>
+                    <br />
+                    <div class="row col-md-12">
+                        <input id="cmdRequest" type="submit" value="Request Reservation" />
+                        <img class="loading" alt="loading..." style="display:none; height:32px; width:32px; cursor:pointer; padding:0px;" src="@Href("~/Images/ajax-loader_small.gif")" />
+                    </div>
+                </form>
+            }
+        }
+
+    </div>
+
+    </div>
+
+</div>
+
+</div>
