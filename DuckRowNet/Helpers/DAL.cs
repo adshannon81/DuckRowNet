@@ -3800,7 +3800,81 @@ namespace DuckRowNet.Helpers
                 "WHERE (GETDATE() <= Class.EndDate) AND (Class.Private = 'False') AND (Class.Company = @0) AND " +
                 "(Class.Name LIKE @1 OR Class.Description LIKE @1 " +
                 "OR Category.Name LIKE @1 OR SubCategory.Name OR Location.Name LIKE @1 " +
-                "OR UserProfile.Firstname LIKE @1 OR UserProfile.Lastname LIKE @1 )", paramList) ;
+                "OR UserProfile.Firstname LIKE @1 OR UserProfile.Lastname LIKE @1 )", paramList);
+
+            List<GroupClass> classes = new List<GroupClass>();
+            foreach (var item in result)
+            {
+                string adminList = item.AdminID.ToString();
+                if (item.AdminID2 != null)
+                { adminList += "," + item.AdminID2.ToString(); }
+                if (item.AdminID3 != null)
+                { adminList += "," + item.AdminID3.ToString(); }
+                if (item.AdminID4 != null)
+                { adminList += "," + item.AdminID4.ToString(); }
+                if (item.AdminID5 != null)
+                { adminList += "," + item.AdminID5.ToString(); }
+
+                classes.Add(new GroupClass(new Guid(item.ID), company, item.CompanyImage, item.Name,
+                    item.CategoryID.ToString(), item.CategoryName, item.SubCategoryID.ToString(), item.SubCategoryName,
+                    //item.LevelID.ToString(), item.LevelName, 
+                    Convert.ToInt16(item.ClassDuration), item.Repeated,
+                    Convert.ToInt16(item.RepeatFrequency), item.DaysOfWeek,
+                    Convert.ToInt16(item.NumberOfLessons), Convert.ToDateTime(item.StartDate),
+                    Convert.ToInt16(item.MaxCapacity), Convert.ToDouble(item.CostPerPerson), Convert.ToDouble(item.CostOfSession),
+                    adminList.Split(','), item.Admin, item.LocationID, item.LocName, item.LocState, item.LocLng, item.LocLat,
+                    item.Description, item.ImageURL,
+                    Convert.ToBoolean(item.IsCourse),
+                    Convert.ToBoolean(item.AllowDropIn), Convert.ToBoolean(item.AbsorbFee),
+                    Convert.ToBoolean(item.AllowReservation), Convert.ToBoolean(item.AutoReservation), Convert.ToBoolean(item.AllowPayment),
+                    Convert.ToBoolean(item.Private), ""));
+
+            }
+            return classes;
+
+        }
+
+        public List<GroupClass> searchPublicClassesByDate(DateTime startDate, DateTime endDate, string company, string subCategory)
+        {
+            List<String> paramList = new List<string>();
+            paramList.Add(startDate.ToString("yyyy/MM/dd"));
+            paramList.Add(endDate.ToString("yyyy/MM/dd"));
+
+            string searchParameters = " WHERE ((Class.StartDate >= @0 AND Class.StartDate <= @1) " +
+                                      " OR (Class.EndDate <= @1 AND Class.EndDate >= @0) " +
+                                      " OR (Class.StartDate <= @0 AND Class.EndDate >= @1)) ";
+
+            if (company != "")
+            {
+                paramList.Add(company);
+                searchParameters += " AND Company.Name = @2 ";
+
+                if (subCategory != "")
+                {
+                    paramList.Add(subCategory);
+                    searchParameters += " AND SubCategory.Name = @3 ";
+                }
+            }
+
+
+            IEnumerable<dynamic> result = runQuery("SELECT Class.ID, Class.Name, Class.Description, " +
+                "Category.ID AS CategoryID, Category.Name AS CategoryName, SubCategory.ID AS SubCategoryID, SubCategory.Name AS SubCategoryName, " +
+                "Level.ID As LevelID, Level.Name AS LevelName, Class.StartDate, Class.EndDate, Class.ClassDuration, " +
+                "Class.NumberOfWeeks, Class.Repeated, Class.RepeatFrequency, Class.NumberOfLessons, Class.DaysOfWeek, " +
+                "Class.CostPerPerson, Class.CostOfSession, " +
+                "Class.MaxCapacity, Class.Description, Class.ImageURL, Class.Company, Class.AdminID, Class.AdminID2, " +
+                "Class.AdminID3, Class.AdminID4, Class.AdminID5, Class.IsCourse, Class.ClassType, " +
+                "Class.AllowDropIn, Class.AbsorbFee, Class.AllowReservation, Class.AutoReservation, Class.AllowPayment, Class.Private, " +
+                "UserProfile.Firstname + ' ' + UserProfile.Lastname AS Admin, " +
+                "Location.ID as LocationID, Location.Name As LocName, Location.State as LocState, Location.Longitude as LocLng, Location.Latitude as LocLat, " +
+                "Company.ImagePath as CompanyImage " +
+                "FROM Class INNER JOIN SubCategory ON Class.SubCategoryID = SubCategory.ID  " +
+                "INNER JOIN Category ON SubCategory.CategoryID = Category.ID " +
+                "INNER JOIN UserProfile ON Class.AdminID = UserProfile.userID " +
+                "INNER JOIN Location ON Class.LocationID = Location.ID " +
+                "INNER JOIN Company ON Class.Company = Company.Name " +
+                "LEFT JOIN Level on Class.LevelID = Level.ID " +
+                searchParameters, paramList);
 
             List<GroupClass> classes = new List<GroupClass>();
             foreach (var item in result)

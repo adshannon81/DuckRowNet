@@ -453,6 +453,7 @@
     <Content Include="Views\Classes\ClassDetail.cshtml" />
     <Content Include="Views\Classes\Page.cshtml" />
     <Content Include="Views\Category\CategoryList.cshtml" />
+    <Content Include="Views\Classes\Search.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ckeditor\" />

@@ -154,5 +154,138 @@ namespace DuckRowNet.Controllers
             return View();
         }
 
+        public ActionResult Search(string companyName = "", string subCategory = "", int year = 0,
+        int month = 0, int day = 0)
+        {
+
+            DAL db = new DAL();
+            CompanyDetails companyDetails = Authenticate.Validate("DuckRow");
+
+            if (companyName != "")
+            {
+                companyDetails = Authenticate.Validate(companyName);
+            }
+
+            ViewBag.CompanyDetails = companyDetails;
+
+            List<GroupClass> classes = new List<GroupClass>();
+
+            DateTime startDate = new DateTime(2000, 1, 1);
+            DateTime endDate = DateTime.Now.AddYears(20);
+
+            if (month == 0)
+            {
+                startDate = new DateTime(year, 1, 1);
+                endDate = new DateTime(year, 12, 31);
+            }
+            else if (day == 0)
+            {
+                startDate = new DateTime(year, month, 1);
+
+                day = 31;
+                if (month == 2)
+                {
+                    day = 28;
+                }
+                else if (month == 4 || month == 6 || month == 9 || month == 11)
+                {
+                    day = 30;
+                }
+                endDate = new DateTime(year, month, day);
+            }
+
+
+
+            classes = db.searchPublicClassesByDate(startDate, endDate, companyName, subCategory);
+            ViewBag.Classes = classes;
+
+            List<String> categories = new List<String>();
+            foreach (var item in classes)
+            {
+                if (!categories.Contains(item.CategoryName))
+                {
+                    categories.Add(item.CategoryName);
+                }
+            }
+            categories.Sort();
+            ViewBag.Categories = categories;
+
+            List<String> locations = new List<String>();
+            foreach (var item in classes)
+            {
+                if (!locations.Contains(item.State) && !String.IsNullOrEmpty(item.State))
+                {
+                    locations.Add(item.State);
+                }
+            }
+            locations.Sort();
+            ViewBag.Locations = locations;
+
+
+            TempData["CompanyDetails"] = companyDetails;
+
+            return View();
+        }
+
+
+        public ActionResult ClassByDateDetail(string companyName = "", string subCategory = "", int year = 0,
+                int month = 0, int day = 0, string classSlug = "")
+        {
+            var hostUrl = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
+
+            CompanyDetails companyDetails = new CompanyDetails();
+            GroupClass gClass = new GroupClass();
+
+            DAL db = new DAL();
+
+            gClass = db.selectClassDetailFromSlug(Request.Url.AbsolutePath);
+
+            if (gClass != null)
+            {
+                companyDetails = Authenticate.Validate(companyName);
+                if (gClass.Company != companyDetails.Name)
+                {
+                    throw new HttpException(404, "Page Not Found");
+                }
+                else
+                {
+                    if (subCategory != Functions.convertToSlug(gClass.SubCategoryName))
+                    {
+                        throw new HttpException(404, "Page Not Found");
+                    }
+                    else
+                    {
+                        DateTime gDate = new DateTime(year, month, day);
+                        if (gClass.StartDate.ToString("yyyy-MM-dd") != gDate.ToString("yyyy-MM-dd"))
+                        {
+                            throw new HttpException(404, "Page Not Found");
+                        }
+                    }
+                }
+
+            }
+            else
+            {
+                throw new HttpException(404, "Page Not Found");
+            }
+
+
+
+            ViewBag.UnconfirmedRequests = new List<ClientAttendance>();
+            if (companyDetails.Name != "" && Authenticate.Admin(companyDetails.Name))
+            {
+                List<ClientAttendance> requests = db.getUnconfirmedRequests(companyDetails.Name);
+                ViewBag.UnconfirmedRequests = requests;
+            }
+
+            TempData["CompanyName"] = companyName;
+            TempData["CompanyDetails"] = companyDetails;
+            TempData["GroupClass"] = gClass;
+
+            Session["subCategory"] = "";
+
+            return View();
+        }
+
     }
 }

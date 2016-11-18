@@ -1,0 +1,84 @@
+﻿@using DuckRowNet.Helpers.Object;
+@{
+    ViewBag.Title = "Classes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    
+    CompanyDetails companyDetails = (CompanyDetails)TempData["CompanyDetails"];
+    ViewBag.FaceBookTags = "";
+    
+}
+
+@section scripts {
+
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        $('.flexslider').flexslider();
+
+        $("featureSlide").slideDown("slow");
+
+            $("#dialog").dialog({
+                modal: true,
+                resizable: false,
+                bgiframe: true,
+                width: 500,
+                height: 230,
+                autoOpen: false
+            });
+
+
+            $(".confirmLink").click(function (e) {
+                e.preventDefault();
+                var theHREF = $(this).attr("href");
+                $("#dialog").css('visibility', 'visible');
+                $("#dialog").css('display', 'none');
+
+                $("#dialog").dialog('option', 'buttons', {
+                    "Confirm": function () {
+                        window.location.href = theHREF;
+                    },
+                    "Cancel": function () {
+                        $(this).dialog("close");
+                    }
+                });
+                $("#dialog").dialog("open");
+            });
+        });
+</script>
+
+}
+
+
+@{ 
+
+
+    
+        if (String.IsNullOrEmpty(companyDetails.Name) || companyDetails.Name == "DuckRow")
+        {
+            ViewBag.MetaDescription = "Find classes in your local area, like Pilates, Yoga, Dance, Music, Art and more, with DuckRow.Net or advertise for free in our online directory";
+            ViewBag.Title = "Find Classes and Advertise for free on DuckRow.Net";
+        }
+        else
+        {
+            var desc = "Find out what classes " + companyDetails.Name + " have going on";
+            if(!String.IsNullOrEmpty(companyDetails.State))
+            {
+                desc += " in " + companyDetails.State;
+            }
+            desc += ". Find more classes in your local area or advertise for free in our online directory";
+            ViewBag.MetaDescription = desc;
+            ViewBag.Title = "Find Classes with " + companyDetails.Name + " on DuckRow.Net";
+        }
+    <text>
+
+        @ClassListing.getHTML(companyDetails)
+        @*@View.ClassInfiniteListing.getHTML(companyDetails)*@
+    </text>
+
+        
+
+
+
+    }

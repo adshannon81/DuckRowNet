@@ -113,8 +113,8 @@ Page.Title = companyDetails.Name + " - " + classItem.Name;
         <div class="div-class-view cat-@classItem.CategoryID">
             @if (!classItem.CheckIfSpacesExist() && classItem.SubCategoryName != "Appointment" && classItem.ClassDates.Last() >= DateTime.Now)
             {
-                <div style="position:absolute; padding: 50px 0px;">
-                    <img style="opacity:0.85;filter:alpha(opacity=85); /* For IE8 and earlier */" src="../Images/fullybooked.png" />
+                <div style="position:absolute; padding: 50px 0px;z-index:2;">
+                    <img style="opacity:0.85;filter:alpha(opacity=85); /* For IE8 and earlier */" src="/Images/fullybooked.png" />
                 </div>
             }
             <div class="div-item-left col-md-8">

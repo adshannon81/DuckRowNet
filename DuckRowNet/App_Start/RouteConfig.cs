@@ -151,17 +151,124 @@ namespace DuckRowNet
                 }
             ); ///Subcat
 
+
+
+            routes.MapRoute(
+                name: "Classes of 2016",
+                url: "2016/{month}/{day}",
+                defaults: new
+                {
+                    controller = "Classes",
+                    action = "Search",
+                    year = 2016,
+                    month = UrlParameter.Optional,
+                    day = UrlParameter.Optional
+                }
+            ); ///companyName/Subcat/year/month/day/classname
+
+            routes.MapRoute(
+                name: "Classes of 2016-2",
+                url: "{companyName}/2016/{month}/{day}",
+                defaults: new
+                {
+                    controller = "Classes",
+                    action = "Search",
+                    companyName = UrlParameter.Optional,
+                    year = 2016,
+                    month = UrlParameter.Optional,
+                    day = UrlParameter.Optional
+                }
+            ); ///companyName/Subcat/year/month/day/classname
+
+            routes.MapRoute(
+                name: "Classes of 2016-3",
+                url: "{companyName}/{subCategory}/2016/{month}/{day}",
+                defaults: new
+                {
+                    controller = "Classes",
+                    action = "Search",
+                    companyName = UrlParameter.Optional,
+                    subCategory = UrlParameter.Optional,
+                    year = 2016,
+                    month = UrlParameter.Optional,
+                    day = UrlParameter.Optional
+                }
+            ); ///companyName/Subcat/year/month/day/classname
+
+            routes.MapRoute(
+                name: "Classes of 2017",
+                url: "2017/{month}/{day}",
+                defaults: new
+                {
+                    controller = "Classes",
+                    action = "Search",
+                    year = 2017,
+                    month = UrlParameter.Optional,
+                    day = UrlParameter.Optional
+                }
+            ); ///companyName/Subcat/year/month/day/classname
+
+            routes.MapRoute(
+                name: "Classes of 2017-2",
+                url: "{companyName}/2017/{month}/{day}",
+                defaults: new
+                {
+                    controller = "Classes",
+                    action = "Search",
+                    companyName = UrlParameter.Optional,
+                    year = 2017,
+                    month = UrlParameter.Optional,
+                    day = UrlParameter.Optional
+                }
+            ); ///companyName/Subcat/year/month/day/classname
+
+            routes.MapRoute(
+                name: "Classes of 2017-3",
+                url: "{companyName}/{subCategory}/2017/{month}/{day}",
+                defaults: new
+                {
+                    controller = "Classes",
+                    action = "Search",
+                    companyName = UrlParameter.Optional,
+                    subCategory = UrlParameter.Optional,
+                    year = 2017,
+                    month = UrlParameter.Optional,
+                    day = UrlParameter.Optional
+                }
+            ); ///companyName/Subcat/year/month/day/classname
+
             routes.MapRoute(
                 name: "Class Details",
                 url: "{companyName}/{subCategory}/{year}/{month}/{day}/{classSlug}",
-                defaults: new { controller = "Classes", action = "ClassDetail", companyName = UrlParameter.Optional,
+                defaults: new
+                {
+                    controller = "Classes",
+                    action = "ClassDetail",
+                    companyName = UrlParameter.Optional,
                     subCategory = UrlParameter.Optional,
                     year = UrlParameter.Optional,
                     month = UrlParameter.Optional,
                     day = UrlParameter.Optional,
                     classSlug = UrlParameter.Optional
                 },
-                constraints: new {year = @"^\d{4}$" }
+                constraints: new { year = @"^\d{4}$" }
+            ); ///companyName/Subcat/year/month/day/classname
+
+
+            routes.MapRoute(
+                name: "Class Details 2016",
+                url: "{companyName}/{subCategory}/2016/{month}/{day}/{classSlug}",
+                defaults: new
+                {
+                    controller = "Home",
+                    action = "Search",
+                    companyName = UrlParameter.Optional,
+                    subCategory = UrlParameter.Optional,
+                    year = 2016,
+                    month = UrlParameter.Optional,
+                    day = UrlParameter.Optional,
+                    classSlug = UrlParameter.Optional
+                }
             ); ///companyName/Subcat/year/month/day/classname
 
 
