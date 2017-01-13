@@ -212,7 +212,7 @@ function log(s) {
                                 });
 
                                 if (row == 0) {
-                                    list = list + '<a href="http://duckrow.net/' + elCompany + '">http://duckrow.net/' + elCompany + '</a>';
+                                    list = list + '<a href="http://duckrow.net/classes/' + elCompany + '">http://duckrow.net/classes/' + elCompany + '</a>';
                                 }
 
                                 list = list + '</div>';
@@ -270,7 +270,7 @@ function log(s) {
                                 });
 
                                 if (row == 0) {
-                                    list = list + '<a href="http://duckrow.net/' + elCompany + '">http://duckrow.net/' + elCompany + '</a>';
+                                    list = list + '<a href="http://duckrow.net/classes/' + elCompany + '">http://duckrow.net/classes/' + elCompany + '</a>';
                                 }
                                 else {
                                     list = list + '</table>';
