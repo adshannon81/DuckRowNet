@@ -192,6 +192,179 @@ namespace DuckRowNet.Controllers
             return View();
         }
 
+
+        public ActionResult InfiniteScroll()
+        {
+            Response.AddHeader("Content-Type", "application/json");
+
+            var returnURL = "";
+            if (Request.UrlReferrer != null)
+            {
+                returnURL = Request.UrlReferrer.ToString();
+            }
+
+
+            var callback = Request.Params["callback"];
+
+            DAL db = new DAL();
+
+            var company = "";
+            var subCategories = "";
+            var instructor = "";
+            var active = "";
+
+            if (Request.Params["name"] != null && Request.Params["name"] != "undefined")
+            {
+                company = Request.Params["name"];
+            }
+            if (Request.Params["subcategories"] != null && Request.Params["subcategories"] != "undefined")
+            {
+                subCategories = Request.Params["subcategories"];
+            }
+            if (Request.Params["instructor"] != null && Request.Params["instructor"] != "undefined")
+            {
+                instructor = Request.Params["instructor"];
+            }
+            if (Request.Params["active"] != null && Request.Params["active"] != "undefined")
+            {
+                active = Request.Params["active"];
+            }
+
+            List<string> subCategoryList = new List<string>();
+            foreach (string s in subCategories.Split(','))
+            {
+                if (!String.IsNullOrEmpty(s))
+                {
+                    subCategoryList.Add(s);
+                }
+            }
+            List<string> instructorList = new List<string>();
+            foreach (string s in instructor.Split(','))
+            {
+                if (!String.IsNullOrEmpty(s))
+                {
+                    instructorList.Add(s);
+                }
+            }
+
+
+
+            company = Authenticate.ValidateStrict(company);
+
+
+            if (company != "DuckRow")
+            {
+                ViewBag.Result = "{\"events\":[";
+
+                var companyURL = db.getCompanyURL(company);
+
+                List<GroupClass> classes = db.selectCurrentPublicClasses(company, subCategoryList, instructorList);
+                classes = classes.OrderBy(c => c.NextClass()).ToList();
+
+                if (active == "future-only")
+                {
+                    classes = classes.Where(c => c.StartDate >= DateTime.Now).ToList();
+
+                }
+                else if (active == "running-only")
+                {
+                    classes = classes.Where(c => c.StartDate < DateTime.Now).ToList();
+                }
+
+                var detailView = "";
+                if (Request.Params["detail"] != null)
+                {
+                    detailView = Request.Params["detail"];
+                }
+
+                int count = 1;
+
+                if (detailView == "full")
+                {
+                    foreach (var item in classes)
+                    {
+                        var image = "";
+                        var companyImage = "";
+                        var description = "";
+
+                        if (!String.IsNullOrEmpty(item.Image))
+                        {
+                            image = item.Image;
+                        }
+                        if (!String.IsNullOrEmpty(item.CompanyImage))
+                        {
+                            companyImage = item.CompanyImage;
+                        }
+
+                        description = Regex.Replace(item.Description, "<[^>]*>", string.Empty);
+                        description = Regex.Replace(description, "\\r\\n", string.Empty);
+                        if (description.Length >= 85)
+                        {
+                            description = description.Substring(0, 76) + "......";
+                        }
+
+                        ViewBag.Result += "{\"startDate\":\"" + item.StartDate.ToString("dddd, dd MMM") + "\"," +
+                            "\"startDay\":\"" + item.StartDate.ToString("dd") + "\"," +
+                            "\"startMonth\":\"" + item.StartDate.ToString("MMM") + "\"," +
+                            "\"startTime\":\"" + item.StartDate.ToString("HH:mm") + " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                            "\"nextDate\":\"" + item.NextClass().ToString("ddd, dd MMM") + "\"," +
+                            "\"nextTime\":\"" + item.NextClass().ToString("HH:mm") + "\", " + // " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                            "\"name\":\"" + item.Name + "\", " +
+                            "\"company_image\":\"" + companyImage + "\", " +
+                            "\"image\":\"http://duckrow.net" + image.Substring(1).Replace("\\", "/") + "\", " +
+                            "\"desc\":\"" + description + "\", " +
+                            "\"subCategory\":\"" + item.SubCategoryName + "\", " +
+                            "\"cat\":\"cat-" + item.CategoryID.ToString() + "\", " +
+                            "\"location\":\"" + item.LocationName + "\", " +
+                            "\"classType\":\"" + item.ClassType + "\", " +
+                            "\"remainingCapacity\":\"" + item.RemainingCapacity.ToString() + "\", " +
+                            "\"id\":\"" + item.ID.ToString() + "\", " +
+                            "\"url\":\"http://duckrow.net" + item.Slug + "\"} ";
+
+                        if (count < classes.Count)
+                        {
+                            ViewBag.Result += ",";
+                        }
+
+
+                    }
+                }
+                else
+                {
+                    foreach (var item in classes)
+                    {
+
+                        ViewBag.Result += "{\"startDate\":\"" + item.StartDate.ToString("dddd, dd MMM") + "\"," +
+                            "\"startDay\":\"" + item.StartDate.ToString("dd") + "\"," +
+                            "\"startMonth\":\"" + item.StartDate.ToString("MMM") + "\"," +
+                            "\"startTime\":\"" + item.StartDate.ToString("HH:mm") + " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                            "\"nextDate\":\"" + item.NextClass().ToString("ddd, dd MMM") + "\"," +
+                            "\"nextTime\":\"" + item.NextClass().ToString("HH:mm") + "\", " + // + " - " + item.EndDate.ToString("HH:mm") + "\", " +
+                            "\"name\":\"" + item.Name + "\", " +
+                            "\"location\":\"" + item.LocationName + "\", " +
+                            "\"remainingCapacity\":\"" + item.RemainingCapacity.ToString() + "\", " +
+                            "\"id\":\"" + item.ID.ToString() + "\", " +
+                            "\"url\":\"" + item.Slug + "\"} ";
+
+                        if (count < classes.Count)
+                        {
+                            ViewBag.Result += ",";
+                        }
+
+
+                    }
+                }
+
+                //}
+                ViewBag.Result += "]}";
+
+                ViewBag.Result = callback + "(" + ViewBag.Result + ")";
+
+            }
+
+            return View();
+        }
+
         // GET: json
         public ActionResult Menu(string id = "")
         {

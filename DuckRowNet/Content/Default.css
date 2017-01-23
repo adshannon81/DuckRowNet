@@ -3764,6 +3764,36 @@ width: 500px;
         width:23% !important;
 
     }*/
+
+    .container .container {
+        padding: 0px;
+    }
+
+    .div-class-view, 
+    .toolBar,
+     #adminBar, 
+    .main-view, 
+    .main-view-box,
+    .div-item-footer
+    {
+        padding: 10px 0px;
+    }
+
+    .div-item-image {
+        padding-left:0px;
+        max-width: 100%;
+    }
+    .event-description {
+        margin: 0px -30px;
+    }
+    .mobile-side-advertisement {
+        margin: 0 auto;
+    }
+
+    .mobile-horizontal-advertisement
+    {
+        overflow: hidden;
+    }
 }
 
 
