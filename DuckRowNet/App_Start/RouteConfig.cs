@@ -17,6 +17,7 @@ namespace DuckRowNet
             routes.IgnoreRoute("Scripts/{*pathInfo}");
             routes.IgnoreRoute("Widgets/{*pathInfo}");
 
+
             routes.MapRoute(
                 name: "Classes",
                 url: "Classes/{companyName}/{classSubCategory}/{classID}",
