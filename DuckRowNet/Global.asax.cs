@@ -22,7 +22,7 @@ namespace DuckRowNet
         {
             try
             {
-                if (HttpContext.Current.Request.Url.AbsoluteUri.ToLower().StartsWith("http://www.duckrow") )
+                if (HttpContext.Current.Request.Url.AbsoluteUri.ToLower().StartsWith("http://www.duckrow"))
                 {
                     string newUrl = string.Empty;
                     if (HttpContext.Current.Items["UrlRewritingNet.UrlRewriter.VirtualUrl"] != null)
