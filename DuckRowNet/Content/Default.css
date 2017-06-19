@@ -3784,7 +3784,8 @@ width: 500px;
         max-width: 100%;
     }
     .event-description {
-        margin: 0px -30px;
+        margin: 0px;
+        width: 100%;
     }
     .mobile-side-advertisement {
         margin: 0 auto;
@@ -3840,11 +3841,12 @@ width: 500px;
     }
 
     .div-class-view .entry-header-custom-wrap p {
-        padding: 0 0 20px 30px;
-        position: relative;
-        float: left;
-        width: 50%;
-        font-size: 16px;
+		padding: 0 0 0px 30px;
+		position: relative;
+		float: left;
+		width: 50%;
+		font-size: 16px;
+		min-height: 64px;
     }
 
     .div-item-image {
@@ -3876,6 +3878,11 @@ width: 500px;
         max-width:100%;
         border-radius: 3px;
         margin:5px;
+    }
+    
+
+    .clear-left {
+        clear: left;
     }
 
     .search-grid .search-item-image

@@ -188,7 +188,7 @@ Page.Title = companyDetails.Name + " - " + classItem.Name;
                 </div>
                 <div class="clear-fix"></div>
                         <div class="entry-header-custom-wrap">
-                            <p class="date">
+                            <p class="date clear-left">
                                 <label>Start Date:</label>
                                 <span id="frontend_date_st_date" class="event_custom frontend_st_date">@classItem.StartDate.ToString("dd MMMM yyyy")</span>
                             </p>
@@ -198,7 +198,7 @@ Page.Title = companyDetails.Name + " - " + classItem.Name;
                                 <span id="frontend_date_end_date" class="frontend_end_date frontend_datepicker event_custom">@classItem.EndDate.ToString("dd MMMM yyyy")</span>
                             </p>
 
-                            <p class="cost">
+                            <p class="cost clear-left">
                                 <label>Cost:</label>
                                 <span class="event_custom">
                                 @if (classItem.IsCourse)
@@ -247,7 +247,7 @@ Page.Title = companyDetails.Name + " - " + classItem.Name;
                                 <label>Time:</label>
                                 <span class="event_custom">@classItem.StartDate.ToString("h:mmtt", CultureInfo.InvariantCulture) - @classItem.EndDate.ToString("h:mmtt", CultureInfo.InvariantCulture)</span>
                             </p>
-                            <p class="address">
+                            <p class="address clear-left">
                                 <label>Location:</label>
                                 <span id="frontend_address" class="event_custom frontend_address">@classItem.LocationName, @classItem.State</span>
                             </p>
