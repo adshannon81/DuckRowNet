@@ -24,7 +24,7 @@ namespace DuckRowNet.Helpers
                 WebMail.SmtpServer = "localhost";
                 WebMail.EnableSsl = false;
                 WebMail.UserName = "info@duckrow.net";
-                WebMail.Password = ">Mk5?VwjE+";
+                WebMail.Password = "la_i@s_Y5%la_i@s_Y5%";
                 WebMail.From = "info@duckrow.net";
             }
         }
